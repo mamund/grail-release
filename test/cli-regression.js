@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 const cliPath = path.join(rootDir, 'cli', 'grail-cli.js');
 const sourceConfigDir = path.join(rootDir, 'config');
+const sourceCapabilitiesDir = path.join(rootDir, 'capabilities');
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'grail-cli-regression-'));
 
 function runCli(args, options = {}) {
@@ -20,8 +21,11 @@ function runCli(args, options = {}) {
 }
 
 function copyConfig(name) {
-  const target = path.join(tempDir, name, 'config');
+  const worldDir = path.join(tempDir, name);
+  const target = path.join(worldDir, 'config');
+  const capabilitiesTarget = path.join(worldDir, 'capabilities');
   fs.mkdirSync(target, { recursive: true });
+  fs.cpSync(sourceCapabilitiesDir, capabilitiesTarget, { recursive: true });
 
   for (const filename of ['registry.json', 'worldstate.json', 'inputs.json', 'goal.json']) {
     fs.copyFileSync(path.join(sourceConfigDir, filename), path.join(target, filename));
@@ -85,6 +89,13 @@ try {
   }
 
   {
+    const result = runCli(['run', '--goal']);
+    assertExit(result, 2, 'missing --goal value should exit 2');
+    assert.match(result.stderr, /GRAIL: --goal requires an effect\./);
+    assert.match(result.stderr, /--help/);
+  }
+
+  {
     const missingDir = path.join(tempDir, 'does-not-exist');
     const result = runCli(['validate', '--config', missingDir]);
     assertExit(result, 2, 'missing configuration should exit 2');
@@ -117,6 +128,40 @@ try {
     assertExit(result, 2, 'schema-invalid configuration should exit 2');
     assert.match(result.stderr, /Configuration error: goal\.json failed schema validation:/);
     assert.match(result.stderr, /must have required property 'goal'/);
+  }
+
+  // Goal overrides apply only to this invocation.
+  {
+    const configDir = copyConfig('goal-override');
+    writeJson(path.join(configDir, 'goal.json'), { goal: 'noProducerExists' });
+
+    const withoutOverride = runCli(['run', '--config', configDir]);
+    assertExit(withoutOverride, 1, 'configured unresolvable goal should still be used without override');
+    assert.match(withoutOverride.stderr, /goal \"noProducerExists\" cannot be resolved/);
+
+    const withOverride = runCli([
+      'run',
+      '--config',
+      configDir,
+      '--goal',
+      'greetingCreated'
+    ]);
+    assertExit(withOverride, 0, 'valid --goal should override goal.json');
+    assert.match(withOverride.stdout, /Goal reached: greetingCreated/);
+
+    const persistedGoal = JSON.parse(fs.readFileSync(path.join(configDir, 'goal.json'), 'utf8'));
+    assert.equal(persistedGoal.goal, 'noProducerExists', '--goal must not modify goal.json');
+  }
+
+  {
+    const configDir = copyConfig('unresolvable-goal-override');
+    const result = runCli([
+      'run',
+      `--config=${configDir}`,
+      '--goal=noProducerExists'
+    ]);
+    assertExit(result, 1, 'unresolvable --goal override should exit 1');
+    assert.match(result.stderr, /goal \"noProducerExists\" cannot be resolved/);
   }
 
   // Pursuit and execution failures exit 1.

@@ -51,12 +51,13 @@ Example:
     console.log(`GRAIL run
 
 Usage:
-  grail run [--config <directory>]
+  grail run [--config <directory>] [--goal <effect>]
 
-Runs the goal declared by the GRAIL environment.
+Runs the goal declared by the GRAIL environment, or an invocation-specific goal supplied with --goal.
 
 Options:
   --config <directory>   Configuration directory (default: ./config)
+  --goal <effect>        Override the goal declared in goal.json for this run
   --help, -h             Show help`);
     return;
   }
@@ -110,6 +111,67 @@ function parseConfig(args) {
   }
 
   return path.resolve(configDir);
+}
+
+function parseRunOptions(args) {
+  let configDir = './config';
+  let goal;
+
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+
+    if (arg === '--config') {
+      const value = args[i + 1];
+      if (!value || value.startsWith('-')) {
+        const error = new Error('--config requires a directory.');
+        error.hint = 'Run "grail run --help" for usage.';
+        throw error;
+      }
+      configDir = value;
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--config=')) {
+      const value = arg.slice('--config='.length);
+      if (!value) {
+        const error = new Error('--config requires a directory.');
+        error.hint = 'Run "grail run --help" for usage.';
+        throw error;
+      }
+      configDir = value;
+      continue;
+    }
+
+    if (arg === '--goal') {
+      const value = args[i + 1];
+      if (!value || value.startsWith('-')) {
+        const error = new Error('--goal requires an effect.');
+        error.hint = 'Run "grail run --help" for usage.';
+        throw error;
+      }
+      goal = value;
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--goal=')) {
+      const value = arg.slice('--goal='.length);
+      if (!value) {
+        const error = new Error('--goal requires an effect.');
+        error.hint = 'Run "grail run --help" for usage.';
+        throw error;
+      }
+      goal = value;
+      continue;
+    }
+
+    const error = new Error(`Unknown option: ${arg}`);
+    error.hint = 'Run "grail run --help" for supported options.';
+    throw error;
+  }
+
+  return { configDir: path.resolve(configDir), goal };
 }
 
 function writeJson(filePath, value) {
@@ -190,8 +252,9 @@ async function runCommand(args) {
   }
 
   const { Grail, loadEnvironment } = await import('../index.js');
-  const configDir = parseConfig(args);
+  const { configDir, goal: goalOverride } = parseRunOptions(args);
   const environment = loadEnvironment(configDir);
+  const goal = goalOverride ?? environment.goal;
 
   const grail = new Grail({
     registry: environment.registry,
@@ -202,7 +265,7 @@ async function runCommand(args) {
   });
 
   try {
-    const result = await grail.pursue(environment.goal);
+    const result = await grail.pursue(goal);
 
     if (!result.reached) {
       const failedObservation = [...result.observations]
@@ -216,11 +279,11 @@ async function runCommand(args) {
           'a capability invocation failed';
 
         console.error(
-          `GRAIL: Execution failed while pursuing goal \"${environment.goal}\": ${detail}`
+          `GRAIL: Execution failed while pursuing goal \"${goal}\": ${detail}`
         );
       } else {
         console.error(
-          `GRAIL: Pursuit failed: goal \"${environment.goal}\" cannot be resolved with the available capabilities.`
+          `GRAIL: Pursuit failed: goal \"${goal}\" cannot be resolved with the available capabilities.`
         );
       }
 
