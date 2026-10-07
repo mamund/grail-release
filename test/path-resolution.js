@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
-const cliPath = path.join(rootDir, 'cli', 'grail.js');
+const cliPath = path.join(rootDir, 'cli', 'grail-cli.js');
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'grail-path-'));
 const worldDir = path.join(tempDir, 'my-world');
 const elsewhereDir = path.join(tempDir, 'elsewhere');
