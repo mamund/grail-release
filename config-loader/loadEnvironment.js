@@ -9,7 +9,7 @@ import { loadAndValidateJSON } from '../utils/loadJSON.js';
  * configuration for the caller to pursue explicitly.
  *
  * @param {string} configDir - Directory containing the GRAIL JSON files.
- * @returns {{registry: object, worldstate: object, inputs: object, goal: string}}
+ * @returns {{registry: object, worldstate: object, inputs: object, goal: string, baseDir: string}}
  */
 export function loadEnvironment(configDir) {
   if (!configDir) {
@@ -42,6 +42,7 @@ export function loadEnvironment(configDir) {
     registry,
     worldstate,
     inputs,
-    goal: goalObj.goal
+    goal: goalObj.goal,
+    baseDir: path.dirname(resolvedConfigDir)
   };
 }

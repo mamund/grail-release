@@ -12,7 +12,7 @@ import { Client } from './client.js';
  * of the calling application.
  */
 export class Grail {
-  constructor({ registry, worldstate, inputs = {}, observationPath }) {
+  constructor({ registry, worldstate, inputs = {}, observationPath, baseDir = process.cwd() }) {
     if (!registry) {
       throw new Error('Grail requires a registry.');
     }
@@ -28,7 +28,8 @@ export class Grail {
     this.server = new Server(
       this.worldState,
       this.affordanceRegistry,
-      this.observationStore
+      this.observationStore,
+      baseDir
     );
     this.client = new Client(this.server, this.inputs);
   }

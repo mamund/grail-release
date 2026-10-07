@@ -2,10 +2,11 @@ import { executeBinding } from "./bindings/binding.js";
 
 // server.js (generic broker)
 export class Server {
-  constructor(worldState, affordanceRegistry, observationStore) {
+  constructor(worldState, affordanceRegistry, observationStore, baseDir = process.cwd()) {
     this.worldState = worldState;
     this.affordanceRegistry = affordanceRegistry;
     this.observationStore = observationStore;
+    this.baseDir = baseDir;
   }
 
   async attempt(affordance, inputs) {
@@ -61,7 +62,8 @@ export class Server {
     ) {
       const interaction = await executeBinding(
         affordance.binding,
-        resolvedInputs
+        resolvedInputs,
+        this.baseDir
       );
 
       console.log(`[SERVER] Executing binding: ${interaction.description}`);

@@ -14,7 +14,8 @@ const environment = loadEnvironment(configDir);
 const grail = new Grail({
   registry: environment.registry,
   worldstate: environment.worldstate,
-  inputs: environment.inputs
+  inputs: environment.inputs,
+  baseDir: environment.baseDir
 });
 
 const result = await grail.pursue(environment.goal);

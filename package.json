@@ -8,7 +8,7 @@
     "grail": "./cli/grail.js"
   },
   "scripts": {
-    "test": "node test/smoke.js"
+    "test": "node test/smoke.js && node test/path-resolution.js"
   },
   "engines": {
     "node": ">=20"

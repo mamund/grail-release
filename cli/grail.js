@@ -189,6 +189,7 @@ async function runCommand(args) {
     registry: environment.registry,
     worldstate: environment.worldstate,
     inputs: environment.inputs,
+    baseDir: environment.baseDir,
     observationPath: path.join(configDir, 'observations.json')
   });
 

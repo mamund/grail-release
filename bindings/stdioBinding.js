@@ -1,10 +1,11 @@
 import { spawn } from "node:child_process";
 
-export function executeStdioBinding(binding, inputs) {
+export function executeStdioBinding(binding, inputs, baseDir = process.cwd()) {
   return new Promise((resolve, reject) => {
     const args = binding.args || [];
 
     const child = spawn(binding.command, args, {
+      cwd: baseDir,
       stdio: ["pipe", "pipe", "pipe"]
     });
 

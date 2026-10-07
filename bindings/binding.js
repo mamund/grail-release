@@ -2,16 +2,16 @@ import { executeHttpBinding } from "./httpBinding.js";
 import { executeNodeBinding } from "./nodeBinding.js";
 import { executeStdioBinding } from "./stdioBinding.js";
 
-export async function executeBinding(binding, inputs) {
+export async function executeBinding(binding, inputs, baseDir = process.cwd()) {
   switch (binding.protocol) {
     case "http":
       return executeHttp(binding, inputs);
 
     case "node":
-      return executeNode(binding, inputs);
+      return executeNode(binding, inputs, baseDir);
 
     case "stdio":
-      return executeStdio(binding, inputs);
+      return executeStdio(binding, inputs, baseDir);
 
     default:
       throw new Error(`Unsupported binding protocol: ${binding.protocol}`);
@@ -40,9 +40,9 @@ async function executeHttp(binding, inputs) {
   };
 }
 
-async function executeNode(binding, inputs) {
+async function executeNode(binding, inputs, baseDir) {
   try {
-    const interaction = await executeNodeBinding(binding, inputs);
+    const interaction = await executeNodeBinding(binding, inputs, baseDir);
     const outputs = extractNodeOutputs(binding.outputs, interaction.result);
 
     return {
@@ -77,9 +77,9 @@ async function executeNode(binding, inputs) {
   }
 }
 
-async function executeStdio(binding, inputs) {
+async function executeStdio(binding, inputs, baseDir) {
   try {
-    const interaction = await executeStdioBinding(binding, inputs);
+    const interaction = await executeStdioBinding(binding, inputs, baseDir);
 
     const ok =
       interaction.exitCode === 0 &&
