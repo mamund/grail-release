@@ -1,0 +1,23 @@
+[
+  {
+    "invocation": {
+      "id": "inv-001",
+      "affordance": "createFarewell",
+      "timestamp": "2026-10-07T20:42:06.349Z",
+      "module": "./capabilities/farewell.js",
+      "function": "createFarewell",
+      "inputs": {
+        "name": "Mike"
+      }
+    },
+    "response": {
+      "result": {
+        "message": "Goodbye, Mike!"
+      }
+    },
+    "outputs": {
+      "message": "Goodbye, Mike!"
+    },
+    "result": "SUCCESS"
+  }
+]

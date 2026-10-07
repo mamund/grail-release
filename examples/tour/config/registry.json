@@ -1,0 +1,48 @@
+{
+  "createGreeting": {
+    "id": "aff-create-greeting",
+    "action": "createGreeting",
+    "type": "task",
+    "preconditions": [],
+    "inputs": {
+      "name": "$inputs.name"
+    },
+    "effects": [
+      "greetingCreated"
+    ],
+    "binding": {
+      "protocol": "node",
+      "module": "./capabilities/hello.js",
+      "function": "createGreeting",
+      "outputs": {
+        "message": {
+          "from": "result",
+          "path": "message"
+        }
+      }
+    }
+  },
+  "createFarewell": {
+    "id": "aff-create-farewell",
+    "action": "createFarewell",
+    "type": "task",
+    "preconditions": [],
+    "inputs": {
+      "name": "$inputs.name"
+    },
+    "effects": [
+      "farewellCreated"
+    ],
+    "binding": {
+      "protocol": "node",
+      "module": "./capabilities/farewell.js",
+      "function": "createFarewell",
+      "outputs": {
+        "message": {
+          "from": "result",
+          "path": "message"
+        }
+      }
+    }
+  }
+}

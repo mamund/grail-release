@@ -3,24 +3,24 @@
     "invocation": {
       "id": "inv-001",
       "affordance": "greet",
-      "timestamp": "2026-10-07T19:10:59.546Z",
+      "timestamp": "2026-10-07T19:27:10.423Z",
       "command": "python3",
       "args": [
         "./capabilities/greet.py"
       ],
       "inputs": {
-        "name": "Fred"
+        "name": "Mike"
       }
     },
     "response": {
       "exitCode": 0,
       "stdout": {
-        "message": "Hello, Fred!"
+        "message": "Hello, Mike!"
       },
       "stderr": ""
     },
     "outputs": {
-      "message": "Hello, Fred!"
+      "message": "Hello, Mike!"
     },
     "result": "SUCCESS"
   }
