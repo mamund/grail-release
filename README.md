@@ -32,21 +32,6 @@ grail run
 
 `grail init` creates a complete example using a small Node capability. A successful run pursues the generated `greetingCreated` goal and executes the capability needed to establish it.
 
-## Command-line tour
-
-For a hands-on introduction to GRAIL, see [A Tour of GRAIL at the Command Line](./examples/cli-tour/README.md).
-
-The tour uses a complete example world to explore:
-
-- running and validating a GRAIL world
-- overriding inputs from the command line or a file
-- running a world from different filesystem locations
-- pursuing different goals in the same world
-- recognizing an unresolvable goal
-- using exit codes and shell loops to compose GRAIL with other tools
-
-The tour is designed to be run directly from the command line and includes all required capabilities, configuration, and sample inputs.
-
 ## A GRAIL world
 
 The generated world has this structure:
@@ -217,6 +202,21 @@ GRAIL: Pursuit failed: goal "..." cannot be resolved with the available capabili
 ```
 
 Configuration and invocation errors exit with code `2`. Execution and pursuit failures exit with code `1`. Expected user errors are reported as concise CLI messages rather than uncaught stack traces.
+
+## Command-line Tour
+
+For a hands-on introduction to GRAIL, see [A Tour of GRAIL at the Command Line](./examples/cli-tour/README.md).
+
+The tour uses a complete example world to explore:
+
+- running and validating a GRAIL world
+- overriding inputs from the command line or a file
+- running a world from different filesystem locations
+- pursuing different goals in the same world
+- recognizing an unresolvable goal
+- using exit codes and shell loops to compose GRAIL with other tools
+
+The tour is designed to be run directly from the command line and includes all required capabilities, configuration, and sample inputs.
 
 ## Programmatic API
 
