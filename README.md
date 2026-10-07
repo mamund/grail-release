@@ -1,4 +1,4 @@
-# GRAIL
+<img src="./images/grail-release-banner.png" />
 
 GRAIL is a runtime for pursuing a declared goal within a bounded environment of available capabilities.
 
