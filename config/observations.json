@@ -3,7 +3,7 @@
     "invocation": {
       "id": "inv-001",
       "affordance": "greet",
-      "timestamp": "2026-10-07T17:55:04.025Z",
+      "timestamp": "2026-10-07T18:05:17.899Z",
       "command": "python3",
       "args": [
         "./capabilities/greet.py"

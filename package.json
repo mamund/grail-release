@@ -1,22 +1,38 @@
 {
+  "name": "@mamund/grail",
+  "version": "0.1.0",
+  "description": "A runtime for pursuing goals within bounded environments of available capabilities.",
   "type": "module",
+  "main": "index.js",
+  "bin": {
+    "grail": "./cli/grail.js"
+  },
+  "scripts": {
+    "test": "node test/smoke.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "agents",
+    "autonomous-agents",
+    "agentic",
+    "runtime",
+    "orchestration",
+    "affordances"
+  ],
+  "author": "Mike Amundsen",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mamund/grail-release.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mamund/grail-release/issues"
+  },
+  "homepage": "https://github.com/mamund/grail-release#readme",
   "dependencies": {
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1"
-  },
-  "name": "grail-release",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "devDependencies": {},
-  "scripts": {
-    "test": "node test/smoke.js",
-    "start": "node server.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bin": {
-    "grail": "./cli/grail.js"
   }
 }
