@@ -193,7 +193,16 @@ async function runCommand(args) {
     observationPath: path.join(configDir, 'observations.json')
   });
 
-  await grail.pursue(environment.goal);
+  try {
+    const result = await grail.pursue(environment.goal);
+
+    if (!result.reached) {
+      process.exitCode = 1;
+    }
+  } catch (error) {
+    error.exitCode = 1;
+    throw error;
+  }
 }
 
 async function validateCommand(args) {
@@ -243,5 +252,5 @@ async function main() {
 
 main().catch(error => {
   console.error(`GRAIL: ${error.message}`);
-  process.exitCode = 1;
+  process.exitCode = error.exitCode ?? 2;
 });

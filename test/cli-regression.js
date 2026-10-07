@@ -62,30 +62,29 @@ try {
     assert.match(result.stdout, /VALID:/);
   }
 
-  // Characterization: invocation/configuration errors currently all exit 1.
-  // These expectations are intentionally expected to change during hardening.
+  // Invocation and configuration errors exit 2.
   {
     const result = runCli(['bogus']);
-    assertExit(result, 1, 'unknown command currently exits 1');
+    assertExit(result, 2, 'unknown command should exit 2');
     assert.match(result.stderr, /GRAIL: Unknown command: bogus/);
   }
 
   {
     const result = runCli(['run', '--bogus']);
-    assertExit(result, 1, 'unknown option currently exits 1');
+    assertExit(result, 2, 'unknown option should exit 2');
     assert.match(result.stderr, /GRAIL: Unknown option: --bogus/);
   }
 
   {
     const result = runCli(['run', '--config']);
-    assertExit(result, 1, 'missing --config value currently exits 1');
+    assertExit(result, 2, 'missing --config value should exit 2');
     assert.match(result.stderr, /GRAIL: --config requires a directory\./);
   }
 
   {
     const missingDir = path.join(tempDir, 'does-not-exist');
     const result = runCli(['validate', '--config', missingDir]);
-    assertExit(result, 1, 'missing configuration currently exits 1');
+    assertExit(result, 2, 'missing configuration should exit 2');
     assert.match(result.stderr, /GRAIL:/);
   }
 
@@ -94,7 +93,7 @@ try {
     fs.writeFileSync(path.join(configDir, 'inputs.json'), '{ bad json\n', 'utf8');
 
     const result = runCli(['validate', '--config', configDir]);
-    assertExit(result, 1, 'malformed JSON currently exits 1');
+    assertExit(result, 2, 'malformed JSON should exit 2');
     assert.match(result.stderr, /GRAIL:/);
   }
 
@@ -103,18 +102,17 @@ try {
     writeJson(path.join(configDir, 'goal.json'), {});
 
     const result = runCli(['validate', '--config', configDir]);
-    assertExit(result, 1, 'schema-invalid configuration currently exits 1');
+    assertExit(result, 2, 'schema-invalid configuration should exit 2');
     assert.match(result.stderr, /GRAIL:/);
   }
 
-  // Characterization: pursuit failures currently complete the CLI process with 0.
-  // Hardening should eventually make these non-zero execution/pursuit outcomes.
+  // Pursuit and execution failures exit 1.
   {
     const configDir = copyConfig('unresolvable-goal');
     writeJson(path.join(configDir, 'goal.json'), { goal: 'noProducerExists' });
 
     const result = runCli(['run', '--config', configDir]);
-    assertExit(result, 0, 'unresolvable goal currently exits 0');
+    assertExit(result, 1, 'unresolvable goal should exit 1');
     assert.match(result.stdout, /goal is unresolvable - noProducerExists/);
   }
 
@@ -128,12 +126,12 @@ try {
     writeJson(registryPath, registry);
 
     const result = runCli(['run', '--config', configDir]);
-    assertExit(result, 0, 'binding failure currently exits 0');
+    assertExit(result, 1, 'binding failure should exit 1');
     assert.match(result.stdout, /Binding failed:/);
     assert.match(result.stdout, /goal is unresolvable/);
   }
 
-  console.log('CLI regression characterization passed.');
+  console.log('CLI exit-code regression passed.');
 } finally {
   fs.rmSync(tempDir, { recursive: true, force: true });
 }
