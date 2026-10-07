@@ -1,0 +1,54 @@
+import { loadAffordanceRegistry } from './affordanceRegistry.js';
+import { WorldState } from './worldState.js';
+import { ObservationStore } from './observationStore.js';
+import { Server } from './server.js';
+import { Client } from './client.js';
+
+/**
+ * Public facade for the GRAIL runtime.
+ *
+ * This class deliberately composes the existing runtime components rather
+ * than replacing them. Configuration loading and validation remain concerns
+ * of the calling application.
+ */
+export class Grail {
+  constructor({ registry, worldstate, inputs = {}, observationPath }) {
+    if (!registry) {
+      throw new Error('Grail requires a registry.');
+    }
+
+    if (!worldstate) {
+      throw new Error('Grail requires worldstate.');
+    }
+
+    if (!observationPath) {
+      throw new Error('Grail currently requires an observationPath.');
+    }
+
+    this.inputs = inputs;
+    this.affordanceRegistry = loadAffordanceRegistry(registry);
+    this.worldState = new WorldState(this.affordanceRegistry, worldstate);
+    this.observationStore = new ObservationStore(observationPath);
+    this.server = new Server(
+      this.worldState,
+      this.affordanceRegistry,
+      this.observationStore
+    );
+    this.client = new Client(this.server, this.inputs);
+  }
+
+  async pursue(goal) {
+    if (!goal) {
+      throw new Error('Grail.pursue requires a goal.');
+    }
+
+    await this.client.pursue(goal);
+
+    return {
+      goal,
+      reached: this.worldState.isPreconditionMet(goal),
+      worldstate: { ...this.worldState.state },
+      observations: [...this.observationStore.observations]
+    };
+  }
+}

@@ -1,12 +1,7 @@
-// run.js (now fully runtime-configurable)
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { loadAndValidateJSON } from './utils/loadJSON.js';
-import { loadAffordanceRegistry } from './affordanceRegistry.js';
-import { WorldState } from './worldState.js';
-import { ObservationStore } from './observationStore.js';
-import { Server } from './server.js';
-import { Client } from './client.js';
+import { Grail } from './index.js';
 
 // Setup __dirname for ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -26,7 +21,7 @@ const registry = loadAndValidateJSON(
   'registry.schema.json'
 );
 
-const state = loadAndValidateJSON(
+const worldstate = loadAndValidateJSON(
   path.join(configDir, 'worldstate.json'),
   'worldstate.schema.json'
 );
@@ -36,24 +31,11 @@ const goalObj = loadAndValidateJSON(
   'goal.schema.json'
 );
 
-// Load external registry
-const affordanceRegistry = loadAffordanceRegistry(registry);
+const grail = new Grail({
+  registry,
+  worldstate,
+  inputs,
+  observationPath: path.join(configDir, 'observations.json')
+});
 
-// Load external world state and initialize this run's observation trace
-const worldState = new WorldState(affordanceRegistry, state);
-
-const observationStore = new ObservationStore(
-  path.join(configDir, 'observations.json')
-);
-
-const server = new Server(
-  worldState,
-  affordanceRegistry,
-  observationStore
-);
-
-const client = new Client(server, inputs);
-
-// Start pursuit
-const goalCondition = goalObj.goal;
-await client.pursue(goalCondition);
+await grail.pursue(goalObj.goal);
