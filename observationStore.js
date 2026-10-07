@@ -97,6 +97,10 @@ export class ObservationStore {
   }
 
   persist() {
+    if (!this.filePath) {
+      return;
+    }
+
     fs.writeFileSync(
       this.filePath,
       `${JSON.stringify(this.observations, null, 2)}\n`,

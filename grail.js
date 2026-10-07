@@ -21,10 +21,6 @@ export class Grail {
       throw new Error('Grail requires worldstate.');
     }
 
-    if (!observationPath) {
-      throw new Error('Grail currently requires an observationPath.');
-    }
-
     this.inputs = inputs;
     this.affordanceRegistry = loadAffordanceRegistry(registry);
     this.worldState = new WorldState(this.affordanceRegistry, worldstate);
