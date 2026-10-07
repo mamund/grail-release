@@ -138,6 +138,8 @@ grail run --config ./path/to/config
 
 The CLI persists execution observations to `observations.json` in the selected configuration directory.
 
+Relative binding paths are resolved from the GRAIL world root—the parent directory of the selected configuration directory—not from the shell's current working directory. This allows a world to be run from another directory without changing the paths declared by its bindings.
+
 General CLI information is available with:
 
 ```bash
@@ -147,6 +149,40 @@ grail init --help
 grail validate --help
 grail run --help
 ```
+
+### Exit codes
+
+GRAIL uses process exit codes so CLI commands can be used reliably from shell scripts and other automation:
+
+| Code | Meaning |
+| ---: | --- |
+| `0` | The command completed successfully. For `grail run`, the goal was reached. |
+| `1` | GRAIL ran, but the pursuit or capability execution failed. |
+| `2` | The command, configuration, or environment was invalid. |
+
+For example:
+
+```bash
+grail run --config ./config
+
+if [ $? -eq 0 ]; then
+  echo "Goal reached"
+else
+  echo "Goal not reached"
+fi
+```
+
+### Errors
+
+CLI errors identify the kind of failure and provide relevant context. Typical messages include:
+
+```text
+GRAIL: Configuration error: ...
+GRAIL: Execution failed while pursuing goal "...": ...
+GRAIL: Pursuit failed: goal "..." cannot be resolved with the available capabilities.
+```
+
+Configuration and invocation errors exit with code `2`. Execution and pursuit failures exit with code `1`. Expected user errors are reported as concise CLI messages rather than uncaught stack traces.
 
 ## Programmatic API
 
@@ -196,13 +232,13 @@ Observations retain execution evidence such as invocation details, responses, ex
 
 ## Validation and tests
 
-Run the current end-to-end smoke test with:
+Run the current automated test suite with:
 
 ```bash
 npm test
 ```
 
-The smoke test loads a validated environment through the public API, pursues its goal, executes a stdio capability, verifies its output, and confirms that the goal is reached.
+The suite covers end-to-end goal pursuit through the public API, stdio execution and output handling, world-relative path resolution, and CLI behavior including configuration errors, execution failures, pursuit failures, messages, and exit codes.
 
 ## Design notes
 
