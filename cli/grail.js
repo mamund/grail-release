@@ -17,6 +17,7 @@ Usage:
   grail <command> [options]
 
 Commands:
+  init       Create a runnable GRAIL world
   run        Run a GRAIL environment
   validate   Validate a GRAIL environment
 
@@ -26,11 +27,26 @@ Options:
   --version, -v          Show version
 
 Examples:
+  grail init my-world
   grail validate --config ./config
   grail run --config ./config`);
 }
 
 function showCommandHelp(command) {
+
+  if (command === 'init') {
+    console.log(`GRAIL init
+
+Usage:
+  grail init <directory>
+
+Creates a complete, runnable GRAIL world.
+
+Example:
+  grail init my-world`);
+    return;
+  }
+
   if (command === 'run') {
     console.log(`GRAIL run
 
@@ -88,6 +104,77 @@ function parseConfig(args) {
   return path.resolve(configDir);
 }
 
+function writeJson(filePath, value) {
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function initCommand(args) {
+  if (args.includes('--help') || args.includes('-h')) {
+    showCommandHelp('init');
+    return;
+  }
+
+  if (args.length !== 1 || args[0].startsWith('-')) {
+    throw new Error('Usage: grail init <directory>');
+  }
+
+  const targetDir = path.resolve(args[0]);
+
+  if (fs.existsSync(targetDir)) {
+    throw new Error(`Target already exists: ${targetDir}`);
+  }
+
+  const configDir = path.join(targetDir, 'config');
+  const capabilitiesDir = path.join(targetDir, 'capabilities');
+
+  fs.mkdirSync(configDir, { recursive: true });
+  fs.mkdirSync(capabilitiesDir, { recursive: true });
+
+  writeJson(path.join(configDir, 'registry.json'), {
+    createGreeting: {
+      id: 'aff-create-greeting',
+      action: 'createGreeting',
+      type: 'task',
+      preconditions: [],
+      inputs: {
+        name: '$inputs.name'
+      },
+      effects: ['greetingCreated'],
+      binding: {
+        protocol: 'node',
+        module: './capabilities/hello.js',
+        function: 'createGreeting',
+        outputs: {
+          message: {
+            from: 'result',
+            path: 'message'
+          }
+        }
+      }
+    }
+  });
+
+  writeJson(path.join(configDir, 'worldstate.json'), {
+    greetingCreated: false
+  });
+
+  writeJson(path.join(configDir, 'inputs.json'), {
+    name: 'World'
+  });
+
+  writeJson(path.join(configDir, 'goal.json'), {
+    goal: 'greetingCreated'
+  });
+
+  fs.writeFileSync(
+    path.join(capabilitiesDir, 'hello.js'),
+    `export async function createGreeting({ name }) {\n  return {\n    message: \`Hello, \${name}!\`\n  };\n}\n`,
+    'utf8'
+  );
+
+  console.log(`Created GRAIL world: ${args[0]}\n\n  config/registry.json\n  config/worldstate.json\n  config/inputs.json\n  config/goal.json\n  capabilities/hello.js\n\nNext:\n\n  cd ${args[0]}\n  grail validate\n  grail run`);
+}
+
 async function runCommand(args) {
   if (args.includes('--help') || args.includes('-h')) {
     showCommandHelp('run');
@@ -134,6 +221,11 @@ async function main() {
   }
 
   const [command, ...commandArgs] = args;
+
+  if (command === 'init') {
+    initCommand(commandArgs);
+    return;
+  }
 
   if (command === 'run') {
     await runCommand(commandArgs);
