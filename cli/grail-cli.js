@@ -23,13 +23,19 @@ Commands:
 
 Options:
   --config <directory>   Configuration directory (default: ./config)
+  --goal <effect>        Override the configured goal (run only)
+  --inputs <json>        Override inputs with a JSON object (run only)
+  --inputs-file <file>   Override inputs from a JSON file (run only)
   --help, -h             Show help
   --version, -v          Show version
 
 Examples:
   grail init my-world
   grail validate --config ./config
-  grail run --config ./config`);
+  grail run --config ./config
+  grail run --config ./config --goal greetingCreated
+  grail run --config ./config --inputs '{"name":"Mike"}'
+  grail run --config ./config --inputs-file ./cases/mike.json`);
 }
 
 function showCommandHelp(command) {
@@ -51,13 +57,15 @@ Example:
     console.log(`GRAIL run
 
 Usage:
-  grail run [--config <directory>] [--goal <effect>]
+  grail run [--config <directory>] [--goal <effect>] [--inputs <json> | --inputs-file <file>]
 
-Runs the goal declared by the GRAIL environment, or an invocation-specific goal supplied with --goal.
+Runs the goal declared by the GRAIL environment, with optional invocation-specific goal and input overrides.
 
 Options:
   --config <directory>   Configuration directory (default: ./config)
   --goal <effect>        Override the goal declared in goal.json for this run
+  --inputs <json>        Replace inputs.json for this run with an inline JSON object
+  --inputs-file <file>   Replace inputs.json for this run with a JSON file
   --help, -h             Show help`);
     return;
   }
@@ -116,6 +124,8 @@ function parseConfig(args) {
 function parseRunOptions(args) {
   let configDir = './config';
   let goal;
+  let inputs;
+  let inputsFile;
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
@@ -166,12 +176,94 @@ function parseRunOptions(args) {
       continue;
     }
 
+    if (arg === '--inputs') {
+      const value = args[i + 1];
+      if (!value || value.startsWith('-')) {
+        const error = new Error('--inputs requires a JSON object.');
+        error.hint = 'Run "grail run --help" for usage.';
+        throw error;
+      }
+      inputs = value;
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--inputs=')) {
+      const value = arg.slice('--inputs='.length);
+      if (!value) {
+        const error = new Error('--inputs requires a JSON object.');
+        error.hint = 'Run "grail run --help" for usage.';
+        throw error;
+      }
+      inputs = value;
+      continue;
+    }
+
+    if (arg === '--inputs-file') {
+      const value = args[i + 1];
+      if (!value || value.startsWith('-')) {
+        const error = new Error('--inputs-file requires a file.');
+        error.hint = 'Run "grail run --help" for usage.';
+        throw error;
+      }
+      inputsFile = value;
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--inputs-file=')) {
+      const value = arg.slice('--inputs-file='.length);
+      if (!value) {
+        const error = new Error('--inputs-file requires a file.');
+        error.hint = 'Run "grail run --help" for usage.';
+        throw error;
+      }
+      inputsFile = value;
+      continue;
+    }
+
     const error = new Error(`Unknown option: ${arg}`);
     error.hint = 'Run "grail run --help" for supported options.';
     throw error;
   }
 
-  return { configDir: path.resolve(configDir), goal };
+  if (inputs !== undefined && inputsFile !== undefined) {
+    const error = new Error('--inputs and --inputs-file cannot be used together.');
+    error.hint = 'Run "grail run --help" for usage.';
+    throw error;
+  }
+
+  return { configDir: path.resolve(configDir), goal, inputs, inputsFile };
+}
+
+function parseInputsJson(value, source) {
+  let parsed;
+
+  try {
+    parsed = JSON.parse(value);
+  } catch (error) {
+    throw new Error(`Invalid JSON in ${source}: ${error.message}`);
+  }
+
+  if (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object') {
+    throw new Error(`${source} must contain a JSON object.`);
+  }
+
+  return parsed;
+}
+
+function loadInputsFile(file) {
+  const filePath = path.resolve(file);
+
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Inputs file not found: ${filePath}`);
+  }
+
+  if (!fs.statSync(filePath).isFile()) {
+    throw new Error(`Inputs file is not a file: ${filePath}`);
+  }
+
+  return parseInputsJson(fs.readFileSync(filePath, 'utf8'), `inputs file ${filePath}`);
 }
 
 function writeJson(filePath, value) {
@@ -252,14 +344,24 @@ async function runCommand(args) {
   }
 
   const { Grail, loadEnvironment } = await import('../index.js');
-  const { configDir, goal: goalOverride } = parseRunOptions(args);
+  const {
+    configDir,
+    goal: goalOverride,
+    inputs: inputsOverride,
+    inputsFile
+  } = parseRunOptions(args);
   const environment = loadEnvironment(configDir);
   const goal = goalOverride ?? environment.goal;
+  const inputs = inputsOverride !== undefined
+    ? parseInputsJson(inputsOverride, '--inputs')
+    : inputsFile !== undefined
+      ? loadInputsFile(inputsFile)
+      : environment.inputs;
 
   const grail = new Grail({
     registry: environment.registry,
     worldstate: environment.worldstate,
-    inputs: environment.inputs,
+    inputs,
     baseDir: environment.baseDir,
     observationPath: path.join(configDir, 'observations.json')
   });

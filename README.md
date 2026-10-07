@@ -138,7 +138,27 @@ grail run --config ./path/to/config
 
 The CLI persists execution observations to `observations.json` in the selected configuration directory.
 
-Relative binding paths are resolved from the GRAIL world root—the parent directory of the selected configuration directory—not from the shell's current working directory. This allows a world to be run from another directory without changing the paths declared by its bindings.
+The goal and inputs declared by the environment can be overridden for a single invocation. A goal override takes precedence over `goal.json`:
+
+```bash
+grail run --config ./config --goal anotherGoal
+```
+
+Inputs can be supplied as an inline JSON object:
+
+```bash
+grail run --config ./config --inputs '{"name":"Mike"}'
+```
+
+or loaded from a JSON file:
+
+```bash
+grail run --config ./config --inputs-file ./cases/mike.json
+```
+
+Input overrides replace the contents of `inputs.json` for that invocation; they are not merged with it. `--inputs` and `--inputs-file` are mutually exclusive. Neither goal nor input overrides modify the environment files on disk.
+
+Relative binding paths are resolved from the GRAIL world root—the parent directory of the selected configuration directory—not from the shell's current working directory. This allows a world to be run from another directory without changing the paths declared by its bindings. Paths supplied with `--inputs-file`, however, are resolved relative to the caller's current working directory.
 
 General CLI information is available with:
 
@@ -160,17 +180,16 @@ GRAIL uses process exit codes so CLI commands can be used reliably from shell sc
 | `1` | GRAIL ran, but the pursuit or capability execution failed. |
 | `2` | The command, configuration, or environment was invalid. |
 
-For example:
+For example, a caller can vary the inputs while GRAIL performs one independent pursuit for each invocation:
 
 ```bash
-grail run --config ./config
-
-if [ $? -eq 0 ]; then
-  echo "Goal reached"
-else
-  echo "Goal not reached"
-fi
+for input in ./cases/*.json
+do
+  grail run --config ./config --inputs-file "$input" || break
+done
 ```
+
+Iteration remains the responsibility of the caller; GRAIL pursues the selected goal once per invocation.
 
 ### Errors
 
@@ -238,7 +257,7 @@ Run the current automated test suite with:
 npm test
 ```
 
-The suite covers end-to-end goal pursuit through the public API, stdio execution and output handling, world-relative path resolution, and CLI behavior including configuration errors, execution failures, pursuit failures, messages, and exit codes.
+The suite covers end-to-end goal pursuit through the public API, stdio execution and output handling, world-relative path resolution, goal and input invocation overrides, and CLI behavior including configuration errors, execution failures, pursuit failures, messages, and exit codes.
 
 ## Design notes
 
