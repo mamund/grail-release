@@ -23,10 +23,11 @@ export function loadJSON(filePath) {
  * @param {string} schemaName - File name of the schema in /schemas (e.g. "goal.schema.json")
  * @returns {object} Parsed and validated JSON content
  */
-export function loadAndValidateJSON(filePath, schemaName) {
+export function loadAndValidateJSON(filePath, schemaName, { silent = false } = {}) {
   const raw = fs.readFileSync(filePath, 'utf8');
   const json = JSON.parse(raw);
-  validateConfig(json, schemaName, path.basename(filePath));
+  validateConfig(json, schemaName, path.basename(filePath), { silent });
   return json;
 }
+
 

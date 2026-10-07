@@ -84,7 +84,9 @@ function parseConfig(args) {
     if (arg === '--config') {
       const value = args[i + 1];
       if (!value || value.startsWith('-')) {
-        throw new Error('--config requires a directory.');
+        const error = new Error('--config requires a directory.');
+        error.hint = 'Run \"grail run --help\" or \"grail validate --help\" for usage.';
+        throw error;
       }
       configDir = value;
       i += 1;
@@ -93,12 +95,18 @@ function parseConfig(args) {
 
     if (arg.startsWith('--config=')) {
       const value = arg.slice('--config='.length);
-      if (!value) throw new Error('--config requires a directory.');
+      if (!value) {
+        const error = new Error('--config requires a directory.');
+        error.hint = 'Run \"grail run --help\" or \"grail validate --help\" for usage.';
+        throw error;
+      }
       configDir = value;
       continue;
     }
 
-    throw new Error(`Unknown option: ${arg}`);
+    const error = new Error(`Unknown option: ${arg}`);
+    error.hint = 'Run the command with --help for supported options.';
+    throw error;
   }
 
   return path.resolve(configDir);
@@ -197,6 +205,25 @@ async function runCommand(args) {
     const result = await grail.pursue(environment.goal);
 
     if (!result.reached) {
+      const failedObservation = [...result.observations]
+        .reverse()
+        .find(observation => observation.result === 'FAIL');
+
+      if (failedObservation) {
+        const detail =
+          failedObservation.response?.error ||
+          failedObservation.response?.stderr ||
+          'a capability invocation failed';
+
+        console.error(
+          `GRAIL: Execution failed while pursuing goal \"${environment.goal}\": ${detail}`
+        );
+      } else {
+        console.error(
+          `GRAIL: Pursuit failed: goal \"${environment.goal}\" cannot be resolved with the available capabilities.`
+        );
+      }
+
       process.exitCode = 1;
     }
   } catch (error) {
@@ -247,10 +274,15 @@ async function main() {
     return;
   }
 
-  throw new Error(`Unknown command: ${command}`);
+  const error = new Error(`Unknown command: ${command}`);
+  error.hint = 'Run \"grail --help\" for available commands.';
+  throw error;
 }
 
 main().catch(error => {
   console.error(`GRAIL: ${error.message}`);
+  if (error.hint) {
+    console.error(error.hint);
+  }
   process.exitCode = error.exitCode ?? 2;
 });

@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { loadAndValidateJSON } from '../utils/loadJSON.js';
 
@@ -13,30 +14,52 @@ import { loadAndValidateJSON } from '../utils/loadJSON.js';
  */
 export function loadEnvironment(configDir) {
   if (!configDir) {
-    throw new Error('loadEnvironment requires a config directory.');
+    throw new Error('Configuration error: no configuration directory was provided.');
   }
 
   const resolvedConfigDir = path.resolve(configDir);
 
-  const inputs = loadAndValidateJSON(
-    path.join(resolvedConfigDir, 'inputs.json'),
-    'inputs.schema.json'
-  );
+  if (!fs.existsSync(resolvedConfigDir)) {
+    throw new Error(`Configuration error: directory not found: ${resolvedConfigDir}`);
+  }
 
-  const registry = loadAndValidateJSON(
-    path.join(resolvedConfigDir, 'registry.json'),
-    'registry.schema.json'
-  );
+  if (!fs.statSync(resolvedConfigDir).isDirectory()) {
+    throw new Error(`Configuration error: not a directory: ${resolvedConfigDir}`);
+  }
 
-  const worldstate = loadAndValidateJSON(
-    path.join(resolvedConfigDir, 'worldstate.json'),
-    'worldstate.schema.json'
-  );
+  const loadConfig = (filename, schemaName) => {
+    const filePath = path.join(resolvedConfigDir, filename);
 
-  const goalObj = loadAndValidateJSON(
-    path.join(resolvedConfigDir, 'goal.json'),
-    'goal.schema.json'
-  );
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Configuration error: ${filename} not found in ${resolvedConfigDir}`);
+    }
+
+    try {
+      return loadAndValidateJSON(filePath, schemaName, { silent: true });
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error(`Configuration error: invalid JSON in ${filename}: ${error.message}`);
+      }
+
+      if (error.validationErrors) {
+        const details = error.validationErrors
+          .map(validationError => {
+            const location = validationError.instancePath || '/';
+            return `${location} ${validationError.message}`;
+          })
+          .join('; ');
+
+        throw new Error(`Configuration error: ${filename} failed schema validation: ${details}`);
+      }
+
+      throw error;
+    }
+  };
+
+  const inputs = loadConfig('inputs.json', 'inputs.schema.json');
+  const registry = loadConfig('registry.json', 'registry.schema.json');
+  const worldstate = loadConfig('worldstate.json', 'worldstate.schema.json');
+  const goalObj = loadConfig('goal.json', 'goal.schema.json');
 
   return {
     registry,
