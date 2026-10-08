@@ -249,14 +249,15 @@ GRAIL can also be loaded as a module by another application or front end.
 Load a filesystem-based environment and pursue its goal:
 
 ```javascript
-import { Grail, loadEnvironment } from 'grail';
+import { Grail, loadEnvironment } from '@mamund/grail';
 
 const environment = loadEnvironment('./config');
 
 const grail = new Grail({
   registry: environment.registry,
   worldstate: environment.worldstate,
-  inputs: environment.inputs
+  inputs: environment.inputs,
+  baseDir: environment.baseDir
 });
 
 const result = await grail.pursue(environment.goal);
