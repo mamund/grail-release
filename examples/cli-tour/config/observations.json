@@ -2,21 +2,21 @@
   {
     "invocation": {
       "id": "inv-001",
-      "affordance": "createFarewell",
-      "timestamp": "2026-10-07T20:42:06.349Z",
-      "module": "./capabilities/farewell.js",
-      "function": "createFarewell",
+      "affordance": "createGreeting",
+      "timestamp": "2026-10-08T14:54:33.235Z",
+      "module": "./capabilities/hello.js",
+      "function": "createGreeting",
       "inputs": {
-        "name": "Mike"
+        "name": "Ruth"
       }
     },
     "response": {
       "result": {
-        "message": "Goodbye, Mike!"
+        "message": "Hello, Ruth!"
       }
     },
     "outputs": {
-      "message": "Goodbye, Mike!"
+      "message": "Hello, Ruth!"
     },
     "result": "SUCCESS"
   }
