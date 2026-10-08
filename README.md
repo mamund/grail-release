@@ -298,6 +298,15 @@ npm test
 
 The suite covers end-to-end goal pursuit through the public API, stdio execution and output handling, world-relative path resolution, goal and input invocation overrides, and CLI behavior including configuration errors, execution failures, pursuit failures, messages, and exit codes.
 
+Tests run as independent suites with start/pass/fail reporting and a 30-second timeout per suite. The CLI regression tests are organized under `test/cli/` into commands, show, output, overrides, and errors. Run an individual suite directly, for example:
+
+```bash
+node test/cli/output.js
+```
+
+Each CLI subprocess also has a 15-second timeout so a hanging command fails with a useful error rather than blocking the entire suite.
+
+
 ## Design notes
 
 Two documents in `docs/` provide additional architectural context:
