@@ -151,7 +151,7 @@ or:
 grail run --config ./path/to/config
 ```
 
-The CLI persists execution observations to `observations.json` in the selected configuration directory.
+The CLI writes execution observations to `observations.json` in the selected configuration directory. Each `grail run` starts an independent pursuit and overwrites this file rather than appending to prior runs. Copy or rename the file before another run if you need to retain its execution record. The configured `worldstate.json` is not modified.
 
 The goal and inputs declared by the environment can be overridden for a single invocation. A goal override takes precedence over `goal.json`:
 
