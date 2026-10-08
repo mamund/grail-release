@@ -171,6 +171,15 @@ or loaded from a JSON file:
 grail run --config ./config --inputs-file ./cases/mike.json
 ```
 
+To inspect results rather than the default execution trace, use `--output`:
+
+```bash
+grail run --output summary
+grail run --output json
+```
+
+`summary` prints the goal, success or failure, capability invocation count, and captured outputs. `json` prints the complete pursuit result (`goal`, `reached`, `worldstate`, and `observations`) as valid JSON suitable for tools such as `jq`. Routine runtime trace messages are suppressed in these modes; errors still appear on stderr. Omitting `--output` preserves the existing trace. The option accepts both `--output json` and `--output=json`. Invalid modes exit with code `2`.
+
 Input overrides replace the contents of `inputs.json` for that invocation; they are not merged with it. `--inputs` and `--inputs-file` are mutually exclusive. Neither goal nor input overrides modify the environment files on disk.
 
 Relative binding paths are resolved from the GRAIL world root—the parent directory of the selected configuration directory—not from the shell's current working directory. This allows a world to be run from another directory without changing the paths declared by its bindings. Paths supplied with `--inputs-file`, however, are resolved relative to the caller's current working directory.

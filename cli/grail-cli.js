@@ -27,6 +27,7 @@ Options:
   --goal <effect>        Override the configured goal (run only)
   --inputs <json>        Override inputs with a JSON object (run only)
   --inputs-file <file>   Override inputs from a JSON file (run only)
+  --output <mode>        Result format: summary or json (run only)
   --help, -h             Show help
   --version, -v          Show version
 
@@ -37,7 +38,9 @@ Examples:
   grail run --config ./config
   grail run --config ./config --goal greetingCreated
   grail run --config ./config --inputs '{"name":"Mike"}'
-  grail run --config ./config --inputs-file ./cases/mike.json`);
+  grail run --config ./config --inputs-file ./cases/mike.json
+  grail run --output summary
+  grail run --output json`);
 }
 
 function showCommandHelp(command) {
@@ -59,7 +62,7 @@ Example:
     console.log(`GRAIL run
 
 Usage:
-  grail run [--config <directory>] [--goal <effect>] [--inputs <json> | --inputs-file <file>]
+  grail run [--config <directory>] [--goal <effect>] [--inputs <json> | --inputs-file <file>] [--output summary|json]
 
 Runs the goal declared by the GRAIL environment, with optional invocation-specific goal and input overrides.
 
@@ -68,6 +71,7 @@ Options:
   --goal <effect>        Override the goal declared in goal.json for this run
   --inputs <json>        Replace inputs.json for this run with an inline JSON object
   --inputs-file <file>   Replace inputs.json for this run with a JSON file
+  --output <mode>        Print a summary or complete JSON result (default: existing trace)
   --help, -h             Show help`);
     return;
   }
@@ -143,6 +147,7 @@ function parseRunOptions(args) {
   let goal;
   let inputs;
   let inputsFile;
+  let output;
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
@@ -239,6 +244,18 @@ function parseRunOptions(args) {
       continue;
     }
 
+    if (arg === '--output' || arg.startsWith('--output=')) {
+      const value = arg === '--output' ? args[++i] : arg.slice('--output='.length);
+      if (!value || value.startsWith('-')) {
+        throw new Error('--output requires summary or json.');
+      }
+      if (!['summary', 'json'].includes(value)) {
+        throw new Error(`Invalid --output value: ${value}. Expected summary or json.`);
+      }
+      output = value;
+      continue;
+    }
+
     const error = new Error(`Unknown option: ${arg}`);
     error.hint = 'Run "grail run --help" for supported options.';
     throw error;
@@ -250,7 +267,7 @@ function parseRunOptions(args) {
     throw error;
   }
 
-  return { configDir: path.resolve(configDir), goal, inputs, inputsFile };
+  return { configDir: path.resolve(configDir), goal, inputs, inputsFile, output };
 }
 
 function parseInputsJson(value, source) {
@@ -354,6 +371,21 @@ function initCommand(args) {
   console.log(`Created GRAIL world: ${args[0]}\n\n  config/registry.json\n  config/worldstate.json\n  config/inputs.json\n  config/goal.json\n  capabilities/hello.js\n\nNext:\n\n  cd ${args[0]}\n  grail validate\n  grail run`);
 }
 
+function formatSummary(result) {
+  const lines = [
+    `Goal: ${result.goal}`,
+    `Result: ${result.reached ? 'SUCCESS' : 'FAIL'}`,
+    `Capability invocations: ${result.observations.length}`
+  ];
+  for (const observation of result.observations) {
+    lines.push('', `${observation.invocation?.affordance ?? 'Unknown affordance'}: ${observation.result}`);
+    for (const [key, value] of Object.entries(observation.outputs ?? {})) {
+      lines.push(`  ${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`);
+    }
+  }
+  return lines.join('\n');
+}
+
 async function runCommand(args) {
   if (args.includes('--help') || args.includes('-h')) {
     showCommandHelp('run');
@@ -365,7 +397,8 @@ async function runCommand(args) {
     configDir,
     goal: goalOverride,
     inputs: inputsOverride,
-    inputsFile
+    inputsFile,
+    output
   } = parseRunOptions(args);
   const environment = loadEnvironment(configDir);
   const goal = goalOverride ?? environment.goal;
@@ -384,7 +417,22 @@ async function runCommand(args) {
   });
 
   try {
-    const result = await grail.pursue(goal);
+    // Preserve the historical trace unless an explicit result format was requested.
+    // Restore logging even when pursuit throws; structured stdout must remain clean.
+    const originalLog = console.log;
+    let result;
+    try {
+      if (output) console.log = () => {};
+      result = await grail.pursue(goal);
+    } finally {
+      console.log = originalLog;
+    }
+
+    if (output === 'json') {
+      console.log(JSON.stringify(result, null, 2));
+    } else if (output === 'summary') {
+      console.log(formatSummary(result));
+    }
 
     if (!result.reached) {
       const failedObservation = [...result.observations]
