@@ -314,6 +314,8 @@ Two documents in `docs/` provide additional architectural context:
 - [What Is Not in the Agent Must Be in the Environment](./docs/ENVIRONMENT.md) discusses GRAIL's environment-first approach to bounded autonomy.
 - [GRAIL Trust Model](./docs/grail-trust-model.md) describes the runtime's trust boundaries and the responsibilities retained by capabilities and the surrounding environment.
 
+**Security and trust**: GRAIL executes capabilities defined by a trusted world. Only run reviewed configurations and bindings. Capabilities are responsible for authentication, authorization, and domain security. Observations may contain sensitive data, and the beta runtime does not enforce execution timeouts. See the GRAIL Trust Model for execution boundaries and operational limitations.
+
 ## Beta scope
 
 The beta is centered on a small runtime and CLI for composing and executing GRAIL worlds. Current work is focused on hardening the public module boundary, CLI behavior, path semantics, error handling, package metadata, documentation, and regression coverage.

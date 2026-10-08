@@ -402,6 +402,24 @@ The observation store records what GRAIL observed. It does not independently est
 
 ---
 
+## Beta execution guidance
+
+The current beta runtime assumes that the GRAIL world and the environment executing it are trusted. **A registry with bindings is executable configuration**, not passive data. Only run worlds whose registry, capability implementations, dependencies, and binding destinations have been reviewed and approved for the host environment. Structural configuration validation does not establish that a world or its capabilities are safe.
+
+**Binding execution boundaries:**
+
+- **Node:** a configured module executes inside the GRAIL process and inherits its privileges. The runtime does not sandbox the module or confine module paths to the world directory.
+- **Stdio:** a configured executable runs as a child process with the host user's privileges. Do not treat process launch as a sandbox or assume child processes are confined to the scenario directory.
+- **HTTP:** a configured endpoint receives the data sent by the binding. Restrict destinations and credentials according to deployment policy; the runtime does not establish the trustworthiness of a destination.
+
+**Credentials and observations:** Inputs, resolved binding arguments, HTTP headers, responses, stdout/stderr, and extracted outputs may be recorded in observations. Do not put secrets directly into scenario inputs or captured outputs unless their exposure and retention are acceptable. Prefer credentials managed by capabilities or their execution environment. Protect any `observations.json` file and any application-retained result objects as potentially sensitive operational data. The beta runtime does not automatically redact sensitive values.
+
+**Long-running operations and uncertain outcomes:** The beta runtime does not enforce application-level execution timeouts for Node, HTTP, or stdio bindings. A capability may hang or run indefinitely. Callers and capability authors should apply their own operational limits where appropriate. A caller stopping its wait, aborting an HTTP request, or terminating a process does **not** prove that an external operation had no effect. In particular, do not automatically retry non-idempotent operations when the outcome is uncertain. The current `SUCCESS`/`BLOCKED`/`FAIL` model does not provide a separate `UNKNOWN` status.
+
+**Responsibility boundary:** GRAIL evaluates conditions and invokes configured capabilities; capabilities enforce authentication, authorization, input validation, and domain-specific safety. Preconditions are not authorization checks. These beta limitations are explicit trust assumptions, not security guarantees.
+
+---
+
 ## 13. External systems
 
 Capabilities frequently interact with systems outside the GRAIL trust boundary.
