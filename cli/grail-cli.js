@@ -338,7 +338,7 @@ function initCommand(args) {
       effects: ['greetingCreated'],
       binding: {
         protocol: 'node',
-        module: './capabilities/hello.js',
+        module: './capabilities/hello.mjs',
         function: 'createGreeting',
         outputs: {
           message: {
@@ -363,12 +363,12 @@ function initCommand(args) {
   });
 
   fs.writeFileSync(
-    path.join(capabilitiesDir, 'hello.js'),
+    path.join(capabilitiesDir, 'hello.mjs'),
     `export async function createGreeting({ name }) {\n  return {\n    message: \`Hello, \${name}!\`\n  };\n}\n`,
     'utf8'
   );
 
-  console.log(`Created GRAIL world: ${args[0]}\n\n  config/registry.json\n  config/worldstate.json\n  config/inputs.json\n  config/goal.json\n  capabilities/hello.js\n\nNext:\n\n  cd ${args[0]}\n  grail validate\n  grail run`);
+  console.log(`Created GRAIL world: ${args[0]}\n\n  config/registry.json\n  config/worldstate.json\n  config/inputs.json\n  config/goal.json\n  capabilities/hello.mjs\n\nNext:\n\n  cd ${args[0]}\n  grail validate\n  grail run`);
 }
 
 function formatSummary(result) {

@@ -39,7 +39,7 @@ The generated world has this structure:
 ```text
 my-world/
 ├── capabilities/
-│   └── hello.js
+│   └── hello.mjs
 └── config/
     ├── goal.json
     ├── inputs.json
@@ -249,15 +249,14 @@ GRAIL can also be loaded as a module by another application or front end.
 Load a filesystem-based environment and pursue its goal:
 
 ```javascript
-import { Grail, loadEnvironment } from '@mamund/grail';
+import { Grail, loadEnvironment } from 'grail';
 
 const environment = loadEnvironment('./config');
 
 const grail = new Grail({
   registry: environment.registry,
   worldstate: environment.worldstate,
-  inputs: environment.inputs,
-  baseDir: environment.baseDir
+  inputs: environment.inputs
 });
 
 const result = await grail.pursue(environment.goal);

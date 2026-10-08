@@ -7,6 +7,7 @@ const suites = [
   'smoke.js',
   'path-resolution.js',
   'cli/commands.js',
+  'cli/init-portability.js',
   'cli/show.js',
   'cli/output.js',
   'cli/overrides.js',
