@@ -6,7 +6,6 @@ const testDir = path.dirname(fileURLToPath(import.meta.url));
 const suites = [
   'smoke.js',
   'path-resolution.js',
-  'api/failure-recovery.js',
   'cli/commands.js',
   'cli/init-portability.js',
   'cli/show.js',

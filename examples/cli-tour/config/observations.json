@@ -3,7 +3,7 @@
     "invocation": {
       "id": "inv-001",
       "affordance": "createGreeting",
-      "timestamp": "2026-10-08T14:54:33.235Z",
+      "timestamp": "2026-10-08T19:03:06.523Z",
       "module": "./capabilities/hello.js",
       "function": "createGreeting",
       "inputs": {
