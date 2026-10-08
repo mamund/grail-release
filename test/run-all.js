@@ -14,7 +14,8 @@ const suites = [
   'cli/overrides.js',
   'cli/errors.js',
   'api/failure-recovery.js',
-  'api/pursuit-stack.js'
+  'api/pursuit-stack.js',
+  'api/independent-pursuits.js'
 ];
 const timeoutMs = 30000;
 for (const suite of suites) {

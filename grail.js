@@ -23,13 +23,20 @@ export class Grail {
 
     this.inputs = inputs;
     this.affordanceRegistry = loadAffordanceRegistry(registry);
-    this.worldState = new WorldState(this.affordanceRegistry, worldstate);
-    this.observationStore = new ObservationStore(observationPath);
+    this.initialWorldstate = { ...worldstate };
+    this.observationPath = observationPath;
+    this.baseDir = baseDir;
+    this.resetPursuit();
+  }
+
+  resetPursuit() {
+    this.worldState = new WorldState(this.affordanceRegistry, this.initialWorldstate);
+    this.observationStore = new ObservationStore(this.observationPath);
     this.server = new Server(
       this.worldState,
       this.affordanceRegistry,
       this.observationStore,
-      baseDir
+      this.baseDir
     );
     this.client = new Client(this.server, this.inputs);
   }
@@ -39,6 +46,7 @@ export class Grail {
       throw new Error('Grail.pursue requires a goal.');
     }
 
+    this.resetPursuit();
     await this.client.pursue(goal);
 
     return {
