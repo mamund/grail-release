@@ -4,7 +4,7 @@ GRAIL is a runtime for pursuing a goal within a bounded environment of available
 
 The easiest way to understand GRAIL is to use it. This tour starts with a small working GRAIL world and changes one thing at a time. You will change inputs, invoke the world from different locations, pursue a different goal, ask for a goal the world cannot resolve, and finally use the shell to repeat pursuits.
 
-The important thing to watch is what does not change: the world continues to define the available possibilities while each invocation supplies the context for a particular pursuit.
+The important thing to watch is what does not change: the world continues to define the available possibilities while each invocation supplies the context for a particular pursuit. Along the way, `grail show` lets you inspect the configured world, and `grail run --output` lets you inspect the result of a pursuit.
 
 ## Before you begin
 
@@ -38,6 +38,21 @@ grail validate
 
 GRAIL uses `./config` as the default configuration directory, so no `--config` option is needed when `config` is a subdirectory of the current directory.
 
+Before running, inspect the world:
+
+```bash
+grail show
+```
+
+This displays the four configured documents. You can also inspect one at a time:
+
+```bash
+grail show goal
+grail show registry
+```
+
+`show` displays the configured environment; it does not execute capabilities or display the results of earlier pursuits.
+
 Now run it:
 
 ```bash
@@ -47,6 +62,14 @@ grail run
 The configured goal is `greetingCreated`. The registry contains an affordance that can establish that effect, so GRAIL can select it, invoke the bound `hello.js` capability, and reach the goal.
 
 You have just pursued a GRAIL goal.
+
+To see a concise account of the pursuit, run it again with:
+
+```bash
+grail run --output summary
+```
+
+The summary reports the goal, outcome, capability invocations, and any captured outputs. Unlike the default run, it focuses on the result rather than the running trace.
 
 ## 2. Change the input
 
@@ -61,16 +84,16 @@ The default input is stored in `config/inputs.json`:
 You do not need to edit that file to use a different value. Try:
 
 ```bash
-grail run --inputs '{"name":"Mike"}'
+grail run --inputs '{"name":"Mike"}' --output summary
 ```
 
 Then try another:
 
 ```bash
-grail run --inputs '{"name":"Jane"}'
+grail run --inputs '{"name":"Jane"}' --output summary
 ```
 
-The same world is being used each time. Only the invocation input changes.
+The same world is being used each time. Only the invocation input changes. The summaries let you compare the captured greeting outputs directly.
 
 For a `run` invocation, an `--inputs` value replaces the value loaded from `inputs.json`. It does not modify `inputs.json` itself.
 
@@ -110,6 +133,12 @@ grail run --config ./grail-cli-tour/config
 
 The world still works.
 
+You can also inspect its registry from here:
+
+```bash
+grail show registry --config ./grail-cli-tour/config
+```
+
 The selected configuration directory tells GRAIL where the world lives. Relative capability binding paths are resolved from the **world root**, which is the parent of the configuration directory, rather than from the shell's current working directory.
 
 That means the caller and the world do not need to occupy the same place.
@@ -133,6 +162,13 @@ The default `config/goal.json` contains:
 }
 ```
 
+Confirm the configured goal and available affordances without opening the files:
+
+```bash
+grail show goal --config ./grail-cli-tour/config
+grail show registry --config ./grail-cli-tour/config
+```
+
 But the registry describes both possibilities. It is not a workflow saying that greeting must happen before farewell or that both must happen. It describes capabilities that are available in this world and the effects they can establish.
 
 ## 6. Change the goal
@@ -143,12 +179,13 @@ Ask the same world to pursue its other available effect:
 grail run \
   --config ./grail-cli-tour/config \
   --goal farewellCreated \
-  --inputs '{"name":"Mike"}'
+  --inputs '{"name":"Mike"}' \
+  --output summary
 ```
 
 GRAIL now pursues `farewellCreated` instead of the goal stored in `goal.json`.
 
-For a `run` invocation, `--goal` takes precedence over `goal.json`. The file itself is not changed.
+For a `run` invocation, `--goal` takes precedence over `goal.json`. The file itself is not changed. If you run `grail show goal --config ./grail-cli-tour/config` again, you will still see `greetingCreated`.
 
 You can therefore make different requests of the same world:
 
@@ -194,6 +231,27 @@ The command was valid and GRAIL was able to examine the world. The pursuit faile
 
 This is different from an invalid command or invalid configuration, which exits with code `2`.
 
+You can inspect the complete structured pursuit result as JSON:
+
+```bash
+grail run \
+  --config ./grail-cli-tour/config \
+  --goal makeCoffee \
+  --output json
+```
+
+The result includes the requested goal, whether it was reached, the resulting worldstate, and observations. In JSON mode, routine trace messages do not mix into stdout. This unsuccessful pursuit still exits with code `1`.
+
+To inspect only the observations, you can pipe a successful pursuit through `jq` (if installed):
+
+```bash
+grail run \
+  --config ./grail-cli-tour/config \
+  --output json | jq '.observations'
+```
+
+The `json` mode includes observations, so a separate observations output mode is unnecessary.
+
 ## 8. Let the shell provide the loop
 
 The `inputs/` directory contains three cases:
@@ -217,6 +275,18 @@ done
 ```
 
 The shell owns the loop. Each iteration starts a separate GRAIL pursuit with a different invocation context.
+
+For a compact view of each result, add `--output summary`:
+
+```bash
+for input in ./grail-cli-tour/inputs/*.json
+do
+  grail run \
+    --config ./grail-cli-tour/config \
+    --inputs-file "$input" \
+    --output summary
+done
+```
 
 GRAIL itself does not need looping semantics to participate in a repetitive or larger process.
 
@@ -242,6 +312,8 @@ During this tour, you changed:
 - the goal GRAIL was asked to pursue; and
 - the number of times the caller invoked GRAIL.
 
+You also inspected the configured world with `show` and the results of individual pursuits with `--output`.
+
 You did not create a new workflow for each variation. The same world continued to describe its conditions, affordances, effects, and bound capabilities.
 
 A useful way to think about the separation is:
@@ -262,6 +334,8 @@ Capabilities
 Caller
   decides when and how often to invoke GRAIL
 ```
+
+The distinction is worth keeping in mind: **`show` describes the configured world; invocation options choose the goal and inputs; `--output` reports the pursuit result.**
 
 This is the central idea behind working with GRAIL from the command line.
 
