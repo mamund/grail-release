@@ -14,6 +14,12 @@ GRAIL is currently being prepared for beta release. The core runtime, configurat
 
 ## Quick start
 
+Install and run the most recent beta edition as follows:
+
+```bash
+npm install -g @mamund/grail@beta
+```
+
 During development, install the repository and expose the local CLI:
 
 ```bash
@@ -249,7 +255,7 @@ GRAIL can also be loaded as a module by another application or front end.
 Load a filesystem-based environment and pursue its goal:
 
 ```javascript
-import { Grail, loadEnvironment } from 'grail';
+import { Grail, loadEnvironment } from '@mamund/grail';
 
 const environment = loadEnvironment('./config');
 
