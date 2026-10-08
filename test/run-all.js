@@ -15,7 +15,8 @@ const suites = [
   'cli/errors.js',
   'api/failure-recovery.js',
   'api/pursuit-stack.js',
-  'api/independent-pursuits.js'
+  'api/independent-pursuits.js',
+  'api/result-output-isolation.js'
 ];
 const timeoutMs = 30000;
 for (const suite of suites) {
