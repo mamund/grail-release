@@ -7,6 +7,8 @@ export class Client {
   }
 
   async pursue(goal) {
+    // Each pursuit has its own traversal stack. Worldstate and observations persist.
+    this.stack = [];
     console.log(`\n[CLIENT] Starting pursuit: ${goal}`);
 
     while (true) {

@@ -12,7 +12,9 @@ const suites = [
   'cli/show.js',
   'cli/output.js',
   'cli/overrides.js',
-  'cli/errors.js'
+  'cli/errors.js',
+  'api/failure-recovery.js',
+  'api/pursuit-stack.js'
 ];
 const timeoutMs = 30000;
 for (const suite of suites) {
