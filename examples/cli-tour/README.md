@@ -11,7 +11,7 @@ The important thing to watch is what does not change: the world continues to def
 This directory is a complete GRAIL world prepared for the tour:
 
 ```text
-grail-cli-tour/
+cli-tour/
 ├── capabilities/
 │   ├── farewell.js
 │   └── hello.js
@@ -26,7 +26,7 @@ grail-cli-tour/
     └── ruth.json
 ```
 
-The examples assume that the `grail` command is installed or linked and that your shell is initially in this `grail-cli-tour` directory.
+The examples assume that the `grail` command is installed or linked and that your shell is initially in this `cli-tour` directory.
 
 ## 1. Validate and run the world
 
@@ -119,7 +119,7 @@ An `--inputs-file` path is resolved relative to the caller's current working dir
 
 ## 4. Leave the world
 
-So far the shell has been inside `grail-cli-tour`. Move to its parent directory:
+So far the shell has been inside `cli-tour`. Move to its parent directory:
 
 ```bash
 cd ..
@@ -128,7 +128,7 @@ cd ..
 Now run the same world explicitly:
 
 ```bash
-grail run --config ./grail-cli-tour/config
+grail run --config ./cli-tour/config
 ```
 
 The world still works.
@@ -136,14 +136,14 @@ The world still works.
 You can also inspect its registry from here:
 
 ```bash
-grail show registry --config ./grail-cli-tour/config
+grail show registry --config ./cli-tour/config
 ```
 
 The selected configuration directory tells GRAIL where the world lives. Relative capability binding paths are resolved from the **world root**, which is the parent of the configuration directory, rather than from the shell's current working directory.
 
 That means the caller and the world do not need to occupy the same place.
 
-For the remaining examples, stay in this parent directory and use `--config ./grail-cli-tour/config`.
+For the remaining examples, stay in this parent directory and use `--config ./cli-tour/config`.
 
 ## 5. Explore the possibilities in the world
 
@@ -165,8 +165,8 @@ The default `config/goal.json` contains:
 Confirm the configured goal and available affordances without opening the files:
 
 ```bash
-grail show goal --config ./grail-cli-tour/config
-grail show registry --config ./grail-cli-tour/config
+grail show goal --config ./cli-tour/config
+grail show registry --config ./cli-tour/config
 ```
 
 But the registry describes both possibilities. It is not a workflow saying that greeting must happen before farewell or that both must happen. It describes capabilities that are available in this world and the effects they can establish.
@@ -177,7 +177,7 @@ Ask the same world to pursue its other available effect:
 
 ```bash
 grail run \
-  --config ./grail-cli-tour/config \
+  --config ./cli-tour/config \
   --goal farewellCreated \
   --inputs '{"name":"Mike"}' \
   --output summary
@@ -185,18 +185,18 @@ grail run \
 
 GRAIL now pursues `farewellCreated` instead of the goal stored in `goal.json`.
 
-For a `run` invocation, `--goal` takes precedence over `goal.json`. The file itself is not changed. If you run `grail show goal --config ./grail-cli-tour/config` again, you will still see `greetingCreated`.
+For a `run` invocation, `--goal` takes precedence over `goal.json`. The file itself is not changed. If you run `grail show goal --config ./cli-tour/config` again, you will still see `greetingCreated`.
 
 You can therefore make different requests of the same world:
 
 ```bash
 grail run \
-  --config ./grail-cli-tour/config \
+  --config ./cli-tour/config \
   --goal greetingCreated \
   --inputs '{"name":"Mike"}'
 
 grail run \
-  --config ./grail-cli-tour/config \
+  --config ./cli-tour/config \
   --goal farewellCreated \
   --inputs '{"name":"Mike"}'
 ```
@@ -209,7 +209,7 @@ Now request a goal for which the world has no producer:
 
 ```bash
 grail run \
-  --config ./grail-cli-tour/config \
+  --config ./cli-tour/config \
   --goal makeCoffee
 ```
 
@@ -235,7 +235,7 @@ You can inspect the complete structured pursuit result as JSON:
 
 ```bash
 grail run \
-  --config ./grail-cli-tour/config \
+  --config ./cli-tour/config \
   --goal makeCoffee \
   --output json
 ```
@@ -246,7 +246,7 @@ To inspect only the observations, you can pipe a successful pursuit through `jq`
 
 ```bash
 grail run \
-  --config ./grail-cli-tour/config \
+  --config ./cli-tour/config \
   --output json | jq '.observations'
 ```
 
@@ -266,10 +266,10 @@ inputs/
 Use the shell to invoke GRAIL once for each input document:
 
 ```bash
-for input in ./grail-cli-tour/inputs/*.json
+for input in ./cli-tour/inputs/*.json
 do
   grail run \
-    --config ./grail-cli-tour/config \
+    --config ./cli-tour/config \
     --inputs-file "$input"
 done
 ```
@@ -279,10 +279,10 @@ The shell owns the loop. Each iteration starts a separate GRAIL pursuit with a d
 For a compact view of each result, add `--output summary`:
 
 ```bash
-for input in ./grail-cli-tour/inputs/*.json
+for input in ./cli-tour/inputs/*.json
 do
   grail run \
-    --config ./grail-cli-tour/config \
+    --config ./cli-tour/config \
     --inputs-file "$input" \
     --output summary
 done
@@ -293,10 +293,10 @@ GRAIL itself does not need looping semantics to participate in a repetitive or l
 The exit-code contract also makes it possible for the caller to decide what to do when a pursuit fails:
 
 ```bash
-for input in ./grail-cli-tour/inputs/*.json
+for input in ./cli-tour/inputs/*.json
 do
   grail run \
-    --config ./grail-cli-tour/config \
+    --config ./cli-tour/config \
     --inputs-file "$input" || break
 done
 ```
