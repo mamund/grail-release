@@ -19,6 +19,7 @@ Usage:
 Commands:
   init       Create a runnable GRAIL world
   run        Run a GRAIL environment
+  show       Display validated configuration
   validate   Validate a GRAIL environment
 
 Options:
@@ -32,6 +33,7 @@ Options:
 Examples:
   grail init my-world
   grail validate --config ./config
+  grail show registry
   grail run --config ./config
   grail run --config ./config --goal greetingCreated
   grail run --config ./config --inputs '{"name":"Mike"}'
@@ -66,6 +68,21 @@ Options:
   --goal <effect>        Override the goal declared in goal.json for this run
   --inputs <json>        Replace inputs.json for this run with an inline JSON object
   --inputs-file <file>   Replace inputs.json for this run with a JSON file
+  --help, -h             Show help`);
+    return;
+  }
+
+  if (command === 'show') {
+    console.log(`GRAIL show
+
+Usage:
+  grail show [registry|worldstate|inputs|goal] [--config <directory>]
+
+Displays validated configuration as formatted JSON without executing capabilities.
+Without a target, displays all four configuration documents.
+
+Options:
+  --config <directory>   Configuration directory (default: ./config)
   --help, -h             Show help`);
     return;
   }
@@ -397,6 +414,48 @@ async function runCommand(args) {
   }
 }
 
+async function showCommand(args) {
+  if (args.includes('--help') || args.includes('-h')) {
+    showCommandHelp('show');
+    return;
+  }
+
+  const targets = new Set(['registry', 'worldstate', 'inputs', 'goal']);
+  let target;
+  const configArgs = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === '--config') {
+      configArgs.push(arg);
+      if (i + 1 < args.length) configArgs.push(args[++i]);
+    } else if (arg.startsWith('--config=')) {
+      configArgs.push(arg);
+    } else if (!arg.startsWith('-') && target === undefined) {
+      target = arg;
+    } else {
+      const error = new Error(`Unknown option or extra argument: ${arg}`);
+      error.hint = 'Run "grail show --help" for usage.';
+      throw error;
+    }
+  }
+
+  if (target !== undefined && !targets.has(target)) {
+    const error = new Error(`Unknown show target: ${target}`);
+    error.hint = 'Choose registry, worldstate, inputs, or goal.';
+    throw error;
+  }
+
+  const { loadEnvironment } = await import('../index.js');
+  const environment = loadEnvironment(parseConfig(configArgs));
+  const documents = {
+    registry: environment.registry,
+    worldstate: environment.worldstate,
+    inputs: environment.inputs,
+    goal: { goal: environment.goal }
+  };
+  console.log(JSON.stringify(target ? documents[target] : documents, null, 2));
+}
+
 async function validateCommand(args) {
   if (args.includes('--help') || args.includes('-h')) {
     showCommandHelp('validate');
@@ -431,6 +490,11 @@ async function main() {
 
   if (command === 'run') {
     await runCommand(commandArgs);
+    return;
+  }
+
+  if (command === 'show') {
+    await showCommand(commandArgs);
     return;
   }
 

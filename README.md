@@ -122,6 +122,21 @@ The default configuration directory is `./config`. A different directory can be 
 grail validate --config ./path/to/config
 ```
 
+### `grail show`
+
+Inspect a validated GRAIL world without executing capabilities:
+
+```bash
+grail show
+grail show registry
+grail show worldstate
+grail show inputs
+grail show goal
+grail show registry --config ./my-world/config
+```
+
+Without a target, `show` prints all four configuration documents as a single JSON object. With a target, it prints that document as formatted JSON. The entire environment must validate first, even when only one document is requested. `show` displays configured initial values, not the worldstate or observations from a previous run, and does not write files.
+
 ### `grail run`
 
 Pursue the goal declared by an environment:
