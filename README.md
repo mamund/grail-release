@@ -1,5 +1,12 @@
 <img src="./images/grail-release-banner.png" />
 
+# GRAIL
+
+**GRAIL Website:** [A different approach to automation](https://mamund.github.io/grail-site/)
+
+Learn how GRAIL enables bounded autonomy by defining outcomes, conditions, and capabilities instead of prescribing workflows.
+
+
 GRAIL is a runtime for pursuing a declared goal within a bounded environment of available capabilities.
 
 A GRAIL world describes the conditions that matter, the capabilities that can change those conditions, and the effects produced when those capabilities succeed. The runtime works from the goal and the current world state to determine what condition needs to change and which available affordance can change it.
