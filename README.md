@@ -319,6 +319,15 @@ node test/cli/output.js
 
 Each CLI subprocess also has a 15-second timeout so a hanging command fails with a useful error rather than blocking the entire suite.
 
+## Sharing GRAIL Worlds
+
+GRAIL separates the mechanics of goal pursuit from the environments in which goals are pursued. This makes it possible to package and share reusable worlds independently of the runtime.
+
+A **world** defines the available possibilities, a **scenario** identifies a goal and supplies its initial conditions, and **observations** record what happened during execution.
+
+A single world can support many scenarios, and its capabilities can evolve without requiring existing scenarios to change.
+
+Read [Sharing GRAIL Worlds: Packaging Reusable Environments for Goal-Directed Autonomy](docs/grail-world-packaging.md) for the packaging pattern, architectural rationale, and experimental evidence from demo-25.
 
 ## Design notes
 
