@@ -17,14 +17,20 @@ The environment defines the possibilities. GRAIL pursues the goal without requir
 
 ## Status
 
-GRAIL is in beta. Version 0.1.0 is published; version 0.2.0 is in release preparation. The runtime supports Node, HTTP, and stdio bindings, a CLI, and a programmatic API. Beta interfaces may evolve.
+**GRAIL v0.2.0 is available as a public beta.** This release includes interactive stdio capabilities, structured progress reporting, capability and pursuit timing, and a programmatic API for embedding GRAIL in other applications. GRAIL remains in beta; interfaces and implementation details may evolve.
 
 ## Quick start
 
-Install and run the most recent beta edition as follows:
+Install the current beta (v0.2.0) and run it as follows:
 
 ```bash
 npm install -g @mamund/grail@beta
+```
+
+To pin this specific release instead of following the beta tag:
+
+```bash
+npm install -g @mamund/grail@0.2.0
 ```
 
 During development, install the repository and expose the local CLI:
@@ -306,6 +312,8 @@ const result = await grail.pursue(environment.goal, {
 
 Events include `pursuit.started`, `capability.started`, `capability.completed`, and `pursuit.completed`. The callback makes it possible to build a user interface or telemetry integration without parsing CLI output. Calling `pursue(environment.goal)` without a callback remains supported.
 
+For a complete working example, see [API Consumer](./examples/api-consumer/README.md). It demonstrates goal pursuit, structured progress events, execution timing, and unresolvable-goal handling using GRAIL as an installed npm dependency.
+
 
 ## Bindings
 
@@ -370,6 +378,6 @@ Two documents in `docs/` provide additional architectural context:
 
 ## Beta scope
 
-The beta centers on a small runtime and CLI for composing and executing GRAIL worlds. Version 0.2.0 is being prepared with interactive stdio, structured progress reporting, and execution timing, alongside continued documentation and regression testing.
+The beta centers on a small runtime and CLI for composing and executing GRAIL worlds. Version 0.2.0 includes interactive stdio, structured progress reporting, and execution timing, alongside updated documentation and regression testing.
 
 More advanced selection strategies, additional tooling, richer authoring experiences, and other execution features can build on this foundation without changing the basic model of goal pursuit through conditions, affordances, effects, and bound capabilities.
