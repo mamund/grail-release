@@ -256,6 +256,10 @@
                   "type": "string"
                 }
               },
+              "interactive": {
+                "type": "boolean",
+                "description": "Enable interactive terminal input for STDIO capabilities."
+              },
               "outputs": {
                 "type": "object",
                 "additionalProperties": {
