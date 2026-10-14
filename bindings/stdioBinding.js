@@ -3,6 +3,20 @@ import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+// Normalize recorded interactive terminal output. Live stderr remains unchanged.
+// Work on the complete transcript because escape sequences may cross data chunks.
+function normalizeInteractiveStderr(value) {
+  return value
+    // OSC sequences (e.g. terminal window titles), terminated by BEL or ST.
+    .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "")
+    // CSI sequences, including readline cursor positioning and erase commands.
+    .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "")
+    // Other short escape sequences.
+    .replace(/\x1b[@-_]/g, "")
+    // Normalize CRLF and standalone carriage returns.
+    .replace(/\r\n?/g, "\n");
+}
+
 export async function executeStdioBinding(binding, inputs, baseDir = process.cwd()) {
   const interactive = binding.interactive === true;
   const args = binding.args || [];
@@ -75,16 +89,18 @@ export async function executeStdioBinding(binding, inputs, baseDir = process.cwd
           parseError = "No JSON returned on stdout";
         }
 
+        const recordedStderr = interactive ? normalizeInteractiveStderr(stderr) : stderr;
+
         resolve({
           command: binding.command,
           args,
           inputs,
           exitCode,
           stdout: parsedStdout ?? stdout,
-          stderr,
+          stderr: recordedStderr,
           error:
             exitCode !== 0
-              ? stderr.trim() || `Process exited with code ${exitCode}`
+              ? recordedStderr.trim() || `Process exited with code ${exitCode}`
               : parseError
         });
       });

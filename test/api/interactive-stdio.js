@@ -50,4 +50,18 @@ for (const [amount, reason, exitCode] of [
   if (exitCode === 0) assert.equal(result.error, null);
   else assert.ok(result.error);
 }
-console.log('Interactive STDIO regression tests passed.');
+// Verify normalization across chunk boundaries, while retaining a readable transcript.
+const ansiFixture = path.join(here, 'fixtures', 'ansi-probe.mjs');
+const ansiRun = spawnSync(process.execPath, [driver, ansiFixture, '0'], {
+  cwd: baseDir, encoding: 'utf8', input: '25\n', timeout: 10000
+});
+if (ansiRun.error) throw ansiRun.error;
+assert.equal(ansiRun.status, 0, ansiRun.stderr);
+const ansiResult = JSON.parse(ansiRun.stdout);
+assert.equal(ansiResult.error, null);
+assert.equal(ansiResult.cleanedUp, true);
+assert.equal(ansiResult.stderr, 'Refund amount: \n25\nDecision recorded\n');
+assert.ok(!ansiResult.stderr.includes('\x1b'));
+assert.ok(!ansiResult.stderr.includes('\r'));
+
+console.log('Interactive STDIO regression and normalization tests passed.');
