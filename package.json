@@ -54,6 +54,7 @@
     "schemas/",
     "docs/",
     "examples/cli-tour/",
+    "examples/api-consumer/",
     "images/"
   ]
 }
