@@ -1,0 +1,14 @@
+{
+  "name": "grail-api-consumer-example",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone example demonstrating the GRAIL public API, progress events, and execution timing.",
+  "type": "module",
+  "scripts": {
+    "test": "node consumer.mjs",
+    "start": "node consumer.mjs"
+  },
+  "dependencies": {
+    "@mamund/grail": "^0.2.0"
+  }
+}

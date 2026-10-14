@@ -1,0 +1,12 @@
+{
+  "createGreeting": {
+    "id": "createGreeting", "action": "createGreeting", "type": "task",
+    "preconditions": [], "inputs": { "name": "$inputs.name" },
+    "effects": ["greetingCreated"],
+    "binding": {
+      "protocol": "stdio", "command": "node",
+      "args": ["./capabilities/greet.mjs"],
+      "outputs": { "greeting": { "from": "stdout", "path": "greeting" } }
+    }
+  }
+}
