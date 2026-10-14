@@ -270,6 +270,24 @@ The implementation performs the work.
 The environment explains how that work participates in pursuit of the
 goal.
 
+## Humans can participate as capabilities
+
+A capability does not have to be entirely automated. A local process may
+ask a person for a decision and return a result to GRAIL through the
+same binding contract used by other capabilities.
+
+This does not introduce a special human-in-the-loop instruction into the
+pursuit model. The registry still declares the affordance, its
+preconditions, and its effects. The capability owns the interaction and
+its domain-specific interpretation of success.
+
+For example, a refund decision may require human judgment. An
+interactive capability can collect that decision, return structured
+data, and allow the runtime to continue pursuing the declared goal.
+
+The human contributes judgment inside the environment's boundaries;
+GRAIL still does not prescribe a workflow.
+
 ## Where the complexity goes
 
 There is no claim here that GRAIL eliminates complexity.

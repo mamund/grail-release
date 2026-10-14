@@ -17,7 +17,7 @@ The environment defines the possibilities. GRAIL pursues the goal without requir
 
 ## Status
 
-GRAIL is currently being prepared for beta release. The core runtime, configuration validation, Node/HTTP/stdio bindings, programmatic API, and initial CLI are working. Interfaces and package details may still change before the beta is declared stable.
+GRAIL is in beta. Version 0.1.0 is published; version 0.2.0 is in release preparation. The runtime supports Node, HTTP, and stdio bindings, a CLI, and a programmatic API. Beta interfaces may evolve.
 
 ## Quick start
 
@@ -191,7 +191,18 @@ grail run --output summary
 grail run --output json
 ```
 
-`summary` prints the goal, success or failure, capability invocation count, and captured outputs. `json` prints the complete pursuit result (`goal`, `reached`, `worldstate`, and `observations`) as valid JSON suitable for tools such as `jq`. Routine runtime trace messages are suppressed in these modes; errors still appear on stderr. Omitting `--output` preserves the existing trace. The option accepts both `--output json` and `--output=json`. Invalid modes exit with code `2`.
+`summary` prints the goal, success or failure, capability invocation count, captured outputs, and total pursuit duration. `json` prints the complete pursuit result (`goal`, `reached`, `worldstate`, `observations`, and `timing`) as valid JSON suitable for tools such as `jq`. Routine runtime trace messages are suppressed in these modes; errors still appear on stderr. Omitting `--output` preserves the existing trace. The option accepts both `--output json` and `--output=json`. Invalid modes exit with code `2`.
+
+### Progress reporting
+
+Use `--progress` to receive live progress events on stderr while keeping the final summary or JSON result on stdout:
+
+```bash
+grail run --output=summary --progress
+grail run --output=json --progress > result.json
+```
+
+Use `--no-progress` to suppress optional progress reporting. Progress and result formatting are independent: this is especially useful for long-running HTTP, local-process, or LLM-backed capabilities. A progress event indicates an execution milestone, not a guarantee of eventual goal completion.
 
 Input overrides replace the contents of `inputs.json` for that invocation; they are not merged with it. `--inputs` and `--inputs-file` are mutually exclusive. Neither goal nor input overrides modify the environment files on disk.
 
@@ -281,7 +292,20 @@ console.log(result.observations);
 
 The `Grail` runtime itself does not require filesystem-backed observations. Observations are retained in memory by default. A caller can provide an `observationPath` when file persistence is wanted.
 
-`pursue()` returns the pursued goal, whether it was reached, the resulting world state, and the observations collected during execution.
+`pursue()` returns the pursued goal, whether it was reached, the resulting world state, observations, and a `timing` object containing the total `durationMs`. Binding-invocation observations also record `timing.durationMs` for the individual capability execution.
+
+Applications can subscribe to structured progress events with an optional callback:
+
+```javascript
+const result = await grail.pursue(environment.goal, {
+  onProgress(event) {
+    console.log(event);
+  }
+});
+```
+
+Events include `pursuit.started`, `capability.started`, `capability.completed`, and `pursuit.completed`. The callback makes it possible to build a user interface or telemetry integration without parsing CLI output. Calling `pursue(environment.goal)` without a callback remains supported.
+
 
 ## Bindings
 
@@ -291,7 +315,13 @@ An affordance may be connected to an executable capability through a binding. Th
 | --- | --- |
 | `node` | Invoke a local JavaScript module and exported function. |
 | `http` | Invoke a capability through HTTP. |
-| `stdio` | Launch a local process, send JSON inputs on stdin, and consume JSON output from stdout. |
+| `stdio` | Launch a local process and consume JSON output from stdout; supports ordinary and interactive execution. |
+
+### Interactive stdio capabilities
+
+A stdio binding can opt into terminal interaction by declaring `"interactive": true` on the binding. In this mode, the child process inherits the terminal input stream so it can prompt a person. GRAIL provides resolved inputs through the temporary JSON file named by `GRAIL_INPUTS_FILE`; the process returns machine-readable JSON on stdout and can write prompts and diagnostic messages to stderr. An interactive terminal is required.
+
+This makes human participation an ordinary capability implementation rather than a special kind of goal-pursuit step. The capability remains responsible for deciding whether its domain operation succeeded. Interactive stderr is normalized in stored observations to make terminal output more readable.
 
 Bindings are adapters between GRAIL affordances and capability implementations. Goal pursuit does not depend on the implementation technology behind a capability.
 
@@ -299,7 +329,7 @@ Bindings are adapters between GRAIL affordances and capability implementations. 
 
 Bound capabilities reduce execution to GRAIL's runtime result model. Successful execution permits declared effects to be applied; failed execution does not.
 
-Observations retain execution evidence such as invocation details, responses, extracted outputs, and the resulting execution status. This allows GRAIL to keep its runtime contract small while preserving useful diagnostic information.
+Observations retain execution evidence such as invocation details, responses, extracted outputs, execution duration, and the resulting execution status. This allows GRAIL to keep its runtime contract small while preserving useful diagnostic information.
 
 ## Validation and tests
 
@@ -340,6 +370,6 @@ Two documents in `docs/` provide additional architectural context:
 
 ## Beta scope
 
-The beta is centered on a small runtime and CLI for composing and executing GRAIL worlds. Current work is focused on hardening the public module boundary, CLI behavior, path semantics, error handling, package metadata, documentation, and regression coverage.
+The beta centers on a small runtime and CLI for composing and executing GRAIL worlds. Version 0.2.0 is being prepared with interactive stdio, structured progress reporting, and execution timing, alongside continued documentation and regression testing.
 
 More advanced selection strategies, additional tooling, richer authoring experiences, and other execution features can build on this foundation without changing the basic model of goal pursuit through conditions, affordances, effects, and bound capabilities.
