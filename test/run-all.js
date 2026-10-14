@@ -17,7 +17,10 @@ const suites = [
   'api/pursuit-stack.js',
   'api/independent-pursuits.js',
   'api/result-output-isolation.js',
-  'api/interactive-stdio.js'
+  'api/interactive-stdio.js',
+  'api/capability-timing.js',
+  'api/progress-reporting.js',
+  'api/pursuit-duration.js'
 ];
 const timeoutMs = 30000;
 for (const suite of suites) {

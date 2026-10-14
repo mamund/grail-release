@@ -10,6 +10,26 @@ const packageJson = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, '..', 'package.json'), 'utf8')
 );
 
+function formatDuration(durationMs) {
+  return typeof durationMs === 'number' && Number.isFinite(durationMs)
+    ? `${(durationMs / 1000).toFixed(2)} s`
+    : 'duration unavailable';
+}
+
+function formatProgressEvent(event) {
+  switch (event.type) {
+    case 'pursuit.started': return `Pursuing ${event.goal}`;
+    case 'pursuit.completed': return `Goal reached: ${event.goal} (${formatDuration(event.durationMs)})`;
+    case 'pursuit.unresolvable': return `Goal unresolvable: ${event.goal} (${formatDuration(event.durationMs)})`;
+    case 'affordance.blocked': return `Resolving ${event.condition ?? 'preconditions'} for ${event.affordance} via ${event.nextAffordance}`;
+    case 'capability.started': return `Invoking ${event.affordance}`;
+    case 'capability.completed': return `${event.result === 'SUCCESS' ? 'Completed' : 'Failed'} ${event.affordance} (${event.durationMs.toFixed(2)} ms)`;
+    case 'condition.unresolvable': return `Condition unresolvable: ${event.condition} (${formatDuration(event.durationMs)})`;
+    case 'pursuit.stopped': return `Cannot proceed: ${event.result} (${formatDuration(event.durationMs)})`;
+    default: return null;
+  }
+}
+
 function showHelp() {
   console.log(`GRAIL
 
@@ -28,6 +48,8 @@ Options:
   --inputs <json>        Override inputs with a JSON object (run only)
   --inputs-file <file>   Override inputs from a JSON file (run only)
   --output <mode>        Result format: summary or json (run only)
+  --progress             Send pursuit progress to stderr (run only)
+  --no-progress          Suppress progress and trace (run only)
   --help, -h             Show help
   --version, -v          Show version
 
@@ -40,7 +62,8 @@ Examples:
   grail run --config ./config --inputs '{"name":"Mike"}'
   grail run --config ./config --inputs-file ./cases/mike.json
   grail run --output summary
-  grail run --output json`);
+  grail run --output json
+  grail run --output json --progress`);
 }
 
 function showCommandHelp(command) {
@@ -62,7 +85,7 @@ Example:
     console.log(`GRAIL run
 
 Usage:
-  grail run [--config <directory>] [--goal <effect>] [--inputs <json> | --inputs-file <file>] [--output summary|json]
+  grail run [--config <directory>] [--goal <effect>] [--inputs <json> | --inputs-file <file>] [--output summary|json] [--progress | --no-progress]
 
 Runs the goal declared by the GRAIL environment, with optional invocation-specific goal and input overrides.
 
@@ -72,6 +95,8 @@ Options:
   --inputs <json>        Replace inputs.json for this run with an inline JSON object
   --inputs-file <file>   Replace inputs.json for this run with a JSON file
   --output <mode>        Print a summary or complete JSON result (default: existing trace)
+  --progress             Send pursuit progress to stderr
+  --no-progress          Suppress progress and runtime trace
   --help, -h             Show help`);
     return;
   }
@@ -148,6 +173,7 @@ function parseRunOptions(args) {
   let inputs;
   let inputsFile;
   let output;
+  let progress;
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
@@ -244,6 +270,14 @@ function parseRunOptions(args) {
       continue;
     }
 
+    if (arg === '--progress' || arg === '--no-progress') {
+      if (progress !== undefined) {
+        throw new Error('--progress and --no-progress cannot be combined or repeated.');
+      }
+      progress = arg === '--progress';
+      continue;
+    }
+
     if (arg === '--output' || arg.startsWith('--output=')) {
       const value = arg === '--output' ? args[++i] : arg.slice('--output='.length);
       if (!value || value.startsWith('-')) {
@@ -267,7 +301,7 @@ function parseRunOptions(args) {
     throw error;
   }
 
-  return { configDir: path.resolve(configDir), goal, inputs, inputsFile, output };
+  return { configDir: path.resolve(configDir), goal, inputs, inputsFile, output, progress };
 }
 
 function parseInputsJson(value, source) {
@@ -375,6 +409,7 @@ function formatSummary(result) {
   const lines = [
     `Goal: ${result.goal}`,
     `Result: ${result.reached ? 'SUCCESS' : 'FAIL'}`,
+    `Duration: ${formatDuration(result.timing?.durationMs)}`,
     `Capability invocations: ${result.observations.length}`
   ];
   for (const observation of result.observations) {
@@ -398,7 +433,8 @@ async function runCommand(args) {
     goal: goalOverride,
     inputs: inputsOverride,
     inputsFile,
-    output
+    output,
+    progress
   } = parseRunOptions(args);
   const environment = loadEnvironment(configDir);
   const goal = goalOverride ?? environment.goal;
@@ -422,8 +458,15 @@ async function runCommand(args) {
     const originalLog = console.log;
     let result;
     try {
-      if (output) console.log = () => {};
-      result = await grail.pursue(goal);
+      if (output || progress !== undefined) console.log = () => {};
+      result = await grail.pursue(goal, {
+        onProgress: progress === true
+          ? event => {
+              const message = formatProgressEvent(event);
+              if (message) process.stderr.write(`[GRAIL] ${message}\n`);
+            }
+          : undefined
+      });
     } finally {
       console.log = originalLog;
     }

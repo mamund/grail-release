@@ -3,6 +3,7 @@ import { WorldState } from './worldState.js';
 import { ObservationStore } from './observationStore.js';
 import { Server } from './server.js';
 import { Client } from './client.js';
+import { performance } from 'node:perf_hooks';
 
 /**
  * Public facade for the GRAIL runtime.
@@ -41,17 +42,33 @@ export class Grail {
     this.client = new Client(this.server, this.inputs);
   }
 
-  async pursue(goal) {
+  async pursue(goal, { onProgress } = {}) {
     if (!goal) {
       throw new Error('Grail.pursue requires a goal.');
     }
 
     this.resetPursuit();
+    this.client.onProgress = onProgress;
+    const startedAt = performance.now();
+    if (onProgress) {
+      this.client.onProgress = event => {
+        if (event.type === 'pursuit.completed' ||
+            event.type === 'pursuit.unresolvable' ||
+            event.type === 'pursuit.stopped' ||
+            event.type === 'condition.unresolvable') {
+          onProgress({ ...event, durationMs: performance.now() - startedAt });
+        } else {
+          onProgress(event);
+        }
+      };
+    }
     await this.client.pursue(goal);
+    const durationMs = performance.now() - startedAt;
 
     return {
       goal,
       reached: this.worldState.isPreconditionMet(goal),
+      timing: { durationMs },
       worldstate: { ...this.worldState.state },
       observations: [...this.observationStore.observations]
     };

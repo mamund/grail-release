@@ -7,6 +7,8 @@ export class Server {
     this.affordanceRegistry = affordanceRegistry;
     this.observationStore = observationStore;
     this.baseDir = baseDir;
+    this.onProgress = null;
+    this.goal = null;
   }
 
   async attempt(affordance, inputs) {
@@ -60,25 +62,34 @@ export class Server {
       affordance.binding &&
       affordance.binding.enabled !== false
     ) {
+      // Measure only the actual binding invocation, not precondition resolution.
+      const startedAt = new Date().toISOString();
+      const startNs = process.hrtime.bigint();
+      this.onProgress?.({ type: "capability.started", goal: this.goal, affordance: affordance.action });
       const interaction = await executeBinding(
         affordance.binding,
         resolvedInputs,
         this.baseDir
       );
+      const durationMs = Number(process.hrtime.bigint() - startNs) / 1e6;
 
       console.log(`[SERVER] Executing binding: ${interaction.description}`);
 
+      const result = interaction.ok ? "SUCCESS" : "FAIL";
       this.observationStore.append({
         invocation: {
           id: this.observationStore.nextInvocationId(),
           affordance: affordance.action,
-          timestamp: new Date().toISOString(),
+          timestamp: startedAt,
           ...interaction.invocation
         },
+        timing: { durationMs },
         response: interaction.response,
         outputs: interaction.outputs,
-        result: interaction.ok ? "SUCCESS" : "FAIL"
+        result
       });
+
+      this.onProgress?.({ type: "capability.completed", goal: this.goal, affordance: affordance.action, result, durationMs });
 
       if (!interaction.ok) {
         console.log(`[SERVER] Binding failed: ${interaction.summary}`);

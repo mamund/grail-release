@@ -1,15 +1,23 @@
 // client.js
 export class Client {
-  constructor(server, inputs) {
+  constructor(server, inputs, onProgress = null) {
     this.server = server;
     this.inputs = inputs;
     this.stack = [];
+    this.onProgress = onProgress;
+  }
+
+  reportProgress(event) {
+    if (this.onProgress) this.onProgress(event);
   }
 
   async pursue(goal) {
     // Each pursuit has its own traversal stack. Worldstate and observations persist.
     this.stack = [];
+    this.server.onProgress = this.onProgress;
+    this.server.goal = goal;
     console.log(`\n[CLIENT] Starting pursuit: ${goal}`);
+    this.reportProgress({ type: "pursuit.started", goal });
 
     while (true) {
 
@@ -19,6 +27,7 @@ export class Client {
 
         if (response.result === "SUCCESS") {
           console.log(`[CLIENT] Goal reached: ${goal}`);
+          this.reportProgress({ type: "pursuit.completed", goal, reached: true });
           break;
         }
 
@@ -36,6 +45,7 @@ export class Client {
         console.log(
           `[CLIENT] Cannot proceed: goal is unresolvable - ${goal}`
         );
+        this.reportProgress({ type: "pursuit.unresolvable", goal });
         break;
       }
 
@@ -44,6 +54,7 @@ export class Client {
 
       if (response.result === "SUCCESS") {
         console.log(`[CLIENT] Affordance succeeded: ${current.action}`);
+
         this.stack.pop();
 
       } else if (
@@ -53,10 +64,12 @@ export class Client {
         const next = response.offeredAffordances[0];
 
         console.log(`[CLIENT] Pushing next affordance: ${next.action}`);
+        this.reportProgress({ type: "affordance.blocked", goal, affordance: current.action, condition: response.condition ?? null, nextAffordance: next.action });
         this.stack.push(next);
 
       } else if (response.result === "FAIL") {
         console.log(`[CLIENT] Affordance failed: ${current.action}`);
+        
         this.stack.pop();
 
       } else if (
@@ -66,10 +79,12 @@ export class Client {
         console.log(
           `[CLIENT] Cannot proceed: condition is unresolvable - ${response.condition}`
         );
+        this.reportProgress({ type: "condition.unresolvable", goal, condition: response.condition });
         break;
 
       } else {
         console.log(`[CLIENT] Cannot proceed: ${response.result}`);
+        this.reportProgress({ type: "pursuit.stopped", goal, result: response.result });
         break;
       }
     }
