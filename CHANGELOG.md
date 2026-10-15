@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — Pursuit instrumentation
+
+- Added optional diagnostic events for condition and affordance selection, including the candidates considered.
+- Added optional stack push/pop events with stack snapshots and completion results.
+- Added an ordered pursuit trace collector for selection and stack events.
+- Added CLI `--trace <file>` to export pursuit telemetry as JSON without changing normal result formatting.
+- Added regression coverage for stack events, selection events, trace collection, and CLI trace export.
+
 ## 0.2.0 — Interactive capabilities and execution visibility
 
 - Added interactive stdio bindings (`"interactive": true`) for capabilities that require terminal input, including human participation during a pursuit.
