@@ -1,0 +1,26 @@
+[
+  {
+    "type": "affordance.selected",
+    "affordance": "greet",
+    "candidates": [
+      "greet"
+    ],
+    "sequence": 1
+  },
+  {
+    "type": "stack.push",
+    "affordance": "greet",
+    "result": null,
+    "stack": [
+      "greet"
+    ],
+    "sequence": 2
+  },
+  {
+    "type": "stack.pop",
+    "affordance": "greet",
+    "result": "SUCCESS",
+    "stack": [],
+    "sequence": 3
+  }
+]

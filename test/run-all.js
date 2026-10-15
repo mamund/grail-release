@@ -13,6 +13,7 @@ const suites = [
   'cli/overrides.js',
   'cli/errors.js',
   'cli/exit-contract.js',
+  'cli/trace-export.js',
   'api/failure-recovery.js',
   'api/pursuit-stack.js',
   'api/independent-pursuits.js',

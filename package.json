@@ -46,6 +46,7 @@
     "affordanceModel.js",
     "affordanceRegistry.js",
     "observationStore.js",
+    "pursuitTrace.js",
     "worldState.js",
     "bindings/",
     "cli/",

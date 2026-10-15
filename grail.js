@@ -42,12 +42,13 @@ export class Grail {
     this.client = new Client(this.server, this.inputs);
   }
 
-  async pursue(goal, { onProgress } = {}) {
+  async pursue(goal, { onProgress, pursuitTrace } = {}) {
     if (!goal) {
       throw new Error('Grail.pursue requires a goal.');
     }
 
     this.resetPursuit();
+    const detachTrace = pursuitTrace?.attach(this.client, this.server);
     this.client.onProgress = onProgress;
     const startedAt = performance.now();
     if (onProgress) {
@@ -62,7 +63,11 @@ export class Grail {
         }
       };
     }
-    await this.client.pursue(goal);
+    try {
+      await this.client.pursue(goal);
+    } finally {
+      detachTrace?.();
+    }
     const durationMs = performance.now() - startedAt;
 
     return {

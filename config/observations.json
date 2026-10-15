@@ -3,7 +3,7 @@
     "invocation": {
       "id": "inv-001",
       "affordance": "greet",
-      "timestamp": "2026-10-08T14:26:12.552Z",
+      "timestamp": "2026-10-15T16:49:24.351Z",
       "command": "python3",
       "args": [
         "./capabilities/greet.py"
@@ -11,6 +11,9 @@
       "inputs": {
         "name": "Mike"
       }
+    },
+    "timing": {
+      "durationMs": 28.450042
     },
     "response": {
       "exitCode": 0,
