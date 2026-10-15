@@ -20,7 +20,8 @@ const suites = [
   'api/interactive-stdio.js',
   'api/capability-timing.js',
   'api/progress-reporting.js',
-  'api/pursuit-duration.js'
+  'api/pursuit-duration.js',
+  'api/stack-events.js'
 ];
 const timeoutMs = 30000;
 for (const suite of suites) {
