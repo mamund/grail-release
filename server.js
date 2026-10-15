@@ -9,6 +9,7 @@ export class Server {
     this.baseDir = baseDir;
     this.onProgress = null;
     this.goal = null;
+    this.onSelectionEvent = null; // Optional diagnostic callback, separate from progress.
   }
 
   async attempt(affordance, inputs) {
@@ -164,14 +165,29 @@ export class Server {
     return { resolved: false };
   }
 
+  reportSelectionEvent(event) {
+    if (typeof this.onSelectionEvent !== "function") return;
+    try {
+      this.onSelectionEvent(event);
+    } catch {
+      // Diagnostic callbacks must not affect pursuit behavior.
+    }
+  }
+
   selectUnmetCondition(conditions) {
     if (conditions.length === 0) {
       return null;
     }
 
-    return conditions[
+    const selected = conditions[
       Math.floor(Math.random() * conditions.length)
     ];
+    this.reportSelectionEvent({
+      type: "condition.selected",
+      condition: selected,
+      candidates: [...conditions]
+    });
+    return selected;
   }
 
   selectAffordance(affordances) {
@@ -188,9 +204,15 @@ export class Server {
       return null;
     }
 
-    return eligible[
+    const selected = eligible[
       Math.floor(Math.random() * eligible.length)
     ];
+    this.reportSelectionEvent({
+      type: "affordance.selected",
+      affordance: selected.action,
+      candidates: eligible.map(item => item.action)
+    });
+    return selected;
   }
 
   findAffordancesForCondition(condition) {
