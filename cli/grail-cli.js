@@ -48,8 +48,9 @@ Options:
   --inputs <json>        Override inputs with a JSON object (run only)
   --inputs-file <file>   Override inputs from a JSON file (run only)
   --output <mode>        Result format: summary or json (run only)
+  --trace <file>         Save pursuit selection/stack events as JSON (run only)
   --progress             Send pursuit progress to stderr (run only)
-  --no-progress          Suppress progress and trace (run only)
+  --no-progress          Suppress live progress messages (run only)
   --help, -h             Show help
   --version, -v          Show version
 
@@ -63,7 +64,8 @@ Examples:
   grail run --config ./config --inputs-file ./cases/mike.json
   grail run --output summary
   grail run --output json
-  grail run --output json --progress`);
+  grail run --output json --progress
+  grail run --trace pursuit-trace.json`);
 }
 
 function showCommandHelp(command) {
@@ -85,7 +87,7 @@ Example:
     console.log(`GRAIL run
 
 Usage:
-  grail run [--config <directory>] [--goal <effect>] [--inputs <json> | --inputs-file <file>] [--output summary|json] [--progress | --no-progress]
+  grail run [--config <directory>] [--goal <effect>] [--inputs <json> | --inputs-file <file>] [--output summary|json] [--trace <file>] [--progress | --no-progress]
 
 Runs the goal declared by the GRAIL environment, with optional invocation-specific goal and input overrides.
 
@@ -95,6 +97,7 @@ Options:
   --inputs <json>        Replace inputs.json for this run with an inline JSON object
   --inputs-file <file>   Replace inputs.json for this run with a JSON file
   --output <mode>        Print a summary or complete JSON result (default: existing trace)
+  --trace <file>         Save ordered pursuit selection and stack events as JSON
   --progress             Send pursuit progress to stderr
   --no-progress          Suppress progress and runtime trace
   --help, -h             Show help`);
@@ -174,6 +177,7 @@ function parseRunOptions(args) {
   let inputsFile;
   let output;
   let progress;
+  let traceFile;
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
@@ -270,6 +274,14 @@ function parseRunOptions(args) {
       continue;
     }
 
+    if (arg === '--trace' || arg.startsWith('--trace=')) {
+      const value = arg === '--trace' ? args[++i] : arg.slice('--trace='.length);
+      if (!value || value.startsWith('-')) throw new Error('--trace requires a file path.');
+      if (traceFile !== undefined) throw new Error('--trace cannot be repeated.');
+      traceFile = path.resolve(value);
+      continue;
+    }
+
     if (arg === '--progress' || arg === '--no-progress') {
       if (progress !== undefined) {
         throw new Error('--progress and --no-progress cannot be combined or repeated.');
@@ -301,7 +313,7 @@ function parseRunOptions(args) {
     throw error;
   }
 
-  return { configDir: path.resolve(configDir), goal, inputs, inputsFile, output, progress };
+  return { configDir: path.resolve(configDir), goal, inputs, inputsFile, output, progress, traceFile };
 }
 
 function parseInputsJson(value, source) {
@@ -434,7 +446,8 @@ async function runCommand(args) {
     inputs: inputsOverride,
     inputsFile,
     output,
-    progress
+    progress,
+    traceFile
   } = parseRunOptions(args);
   const environment = loadEnvironment(configDir);
   const goal = goalOverride ?? environment.goal;
@@ -452,6 +465,10 @@ async function runCommand(args) {
     observationPath: path.join(configDir, 'observations.json')
   });
 
+  const pursuitTrace = traceFile
+    ? (await import('../pursuitTrace.js')).createPursuitTrace()
+    : undefined;
+
   try {
     // Preserve the historical trace unless an explicit result format was requested.
     // Restore logging even when pursuit throws; structured stdout must remain clean.
@@ -460,6 +477,7 @@ async function runCommand(args) {
     try {
       if (output || progress !== undefined) console.log = () => {};
       result = await grail.pursue(goal, {
+        pursuitTrace,
         onProgress: progress === true
           ? event => {
               const message = formatProgressEvent(event);
@@ -470,6 +488,8 @@ async function runCommand(args) {
     } finally {
       console.log = originalLog;
     }
+
+    if (traceFile) writeJson(traceFile, pursuitTrace.events);
 
     if (output === 'json') {
       console.log(JSON.stringify(result, null, 2));

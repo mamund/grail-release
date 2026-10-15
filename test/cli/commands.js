@@ -21,7 +21,7 @@ try {
   {
     const result = runCli(['--version']);
     assertExit(result, 0, '--version should succeed');
-    assert.match(result.stdout, /^0\.1\.0\s*$/);
+    assert.match(result.stdout, /^0\.2\.0\s*$/);
   }
 
   {

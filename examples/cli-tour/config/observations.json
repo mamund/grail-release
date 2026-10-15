@@ -3,20 +3,23 @@
     "invocation": {
       "id": "inv-001",
       "affordance": "createGreeting",
-      "timestamp": "2026-10-08T19:03:06.523Z",
+      "timestamp": "2026-10-15T17:44:05.991Z",
       "module": "./capabilities/hello.js",
       "function": "createGreeting",
       "inputs": {
-        "name": "Ruth"
+        "name": "World"
       }
+    },
+    "timing": {
+      "durationMs": 1.234234
     },
     "response": {
       "result": {
-        "message": "Hello, Ruth!"
+        "message": "Hello, World!"
       }
     },
     "outputs": {
-      "message": "Hello, Ruth!"
+      "message": "Hello, World!"
     },
     "result": "SUCCESS"
   }

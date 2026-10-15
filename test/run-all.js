@@ -13,6 +13,7 @@ const suites = [
   'cli/overrides.js',
   'cli/errors.js',
   'cli/exit-contract.js',
+  'cli/trace-export.js',
   'api/failure-recovery.js',
   'api/pursuit-stack.js',
   'api/independent-pursuits.js',
@@ -20,7 +21,10 @@ const suites = [
   'api/interactive-stdio.js',
   'api/capability-timing.js',
   'api/progress-reporting.js',
-  'api/pursuit-duration.js'
+  'api/pursuit-duration.js',
+  'api/stack-events.js',
+  'api/selection-events.js',
+  'api/pursuit-trace.js'
 ];
 const timeoutMs = 30000;
 for (const suite of suites) {

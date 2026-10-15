@@ -5,10 +5,26 @@ export class Client {
     this.inputs = inputs;
     this.stack = [];
     this.onProgress = onProgress;
+    this.onStackEvent = null; // Optional diagnostic callback; independent of progress reporting.
   }
 
   reportProgress(event) {
     if (this.onProgress) this.onProgress(event);
+  }
+
+  reportStackEvent(type, affordance, result = null) {
+    if (typeof this.onStackEvent !== 'function') return;
+    // The callback is observational: exceptions must not affect a pursuit.
+    try {
+      this.onStackEvent({
+        type,
+        affordance,
+        result,
+        stack: this.stack.map(item => item.action)
+      });
+    } catch {
+      // Ignore diagnostic callback errors.
+    }
   }
 
   async pursue(goal) {
@@ -39,6 +55,7 @@ export class Client {
           );
 
           this.stack.push(next);
+          this.reportStackEvent("stack.push", next.action);
           continue;
         }
 
@@ -56,6 +73,7 @@ export class Client {
         console.log(`[CLIENT] Affordance succeeded: ${current.action}`);
 
         this.stack.pop();
+        this.reportStackEvent("stack.pop", current.action, "SUCCESS");
 
       } else if (
         response.result === "BLOCKED" &&
@@ -66,11 +84,13 @@ export class Client {
         console.log(`[CLIENT] Pushing next affordance: ${next.action}`);
         this.reportProgress({ type: "affordance.blocked", goal, affordance: current.action, condition: response.condition ?? null, nextAffordance: next.action });
         this.stack.push(next);
+        this.reportStackEvent("stack.push", next.action);
 
       } else if (response.result === "FAIL") {
         console.log(`[CLIENT] Affordance failed: ${current.action}`);
         
         this.stack.pop();
+        this.reportStackEvent("stack.pop", current.action, "FAIL");
 
       } else if (
         response.result === "BLOCKED" &&

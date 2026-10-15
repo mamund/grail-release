@@ -210,6 +210,29 @@ grail run --output=json --progress > result.json
 
 Use `--no-progress` to suppress optional progress reporting. Progress and result formatting are independent: this is especially useful for long-running HTTP, local-process, or LLM-backed capabilities. A progress event indicates an execution milestone, not a guarantee of eventual goal completion.
 
+### Pursuit trace export (development branch)
+
+Use `--trace <file>` to save an ordered JSON record of the runtime's selection decisions and pursuit stack changes:
+
+```bash
+grail run --config ./config --output=json --trace ./pursuit-trace.json
+```
+
+The trace is written to the specified file separately from the normal CLI result. It contains events with monotonically increasing `sequence` numbers:
+
+| Event | Recorded information |
+| --- | --- |
+| `condition.selected` | Selected unmet condition and the candidate conditions considered. |
+| `affordance.selected` | Selected affordance and eligible candidate affordances. |
+| `stack.push` | Affordance pushed and the resulting stack snapshot. |
+| `stack.pop` | Affordance popped, its `SUCCESS` or `FAIL` result, and the resulting stack snapshot. |
+
+This **pursuit trace** records runtime decisions and stack activity. It differs from `observations.json`, which records capability invocations, responses, outputs, results, and timing. Together with `registry.json`, these files can be used to inspect the available affordances and reconstruct the observed pursuit. A trace is optional; running without `--trace` does not create a pursuit trace file.
+
+If the trace destination cannot be written, the CLI reports the file error and exits with code `1`, even if the pursuit itself reached its goal. Create the destination directory before running the command.
+
+The `--trace` option is available in the instrumented development branch; it is not part of the published v0.2.0 beta.
+
 Input overrides replace the contents of `inputs.json` for that invocation; they are not merged with it. `--inputs` and `--inputs-file` are mutually exclusive. Neither goal nor input overrides modify the environment files on disk.
 
 Relative binding paths are resolved from the GRAIL world root—the parent directory of the selected configuration directory—not from the shell's current working directory. This allows a world to be run from another directory without changing the paths declared by its bindings. Paths supplied with `--inputs-file`, however, are resolved relative to the caller's current working directory.
@@ -231,7 +254,7 @@ GRAIL uses process exit codes so CLI commands can be used reliably from shell sc
 | Code | Meaning |
 | ---: | --- |
 | `0` | The command completed successfully. For `grail run`, the goal was reached. |
-| `1` | GRAIL ran, but the pursuit or capability execution failed. |
+| `1` | GRAIL ran, but pursuit, capability execution, or an output operation such as trace export failed. |
 | `2` | The command, configuration, or environment was invalid. |
 
 For example, a caller can vary the inputs while GRAIL performs one independent pursuit for each invocation:
@@ -347,7 +370,7 @@ Run the current automated test suite with:
 npm test
 ```
 
-The suite covers end-to-end goal pursuit through the public API, stdio execution and output handling, world-relative path resolution, goal and input invocation overrides, and CLI behavior including configuration errors, execution failures, pursuit failures, messages, and exit codes.
+The suite covers end-to-end goal pursuit through the public API, stdio execution and output handling, world-relative path resolution, goal and input invocation overrides, stack and selection telemetry, pursuit trace collection and CLI export, and CLI behavior including configuration errors, execution failures, pursuit failures, messages, and exit codes.
 
 Tests run as independent suites with start/pass/fail reporting and a 30-second timeout per suite. The CLI regression tests are organized under `test/cli/` into commands, show, output, overrides, and errors. Run an individual suite directly, for example:
 
