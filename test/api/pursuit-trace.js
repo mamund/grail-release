@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import { createPursuitTrace } from '../../pursuitTrace.js';
+
+const seen = [];
+const client = { onStackEvent: event => seen.push(event.type) };
+const server = { onSelectionEvent: () => { throw new Error('diagnostic failure'); } };
+const trace = createPursuitTrace();
+const detach = trace.attach(client, server);
+server.onSelectionEvent({ type: 'affordance.selected', affordance: 'primary', candidates: ['primary', 'fallback'] });
+client.onStackEvent({ type: 'stack.push', affordance: 'primary', result: null, stack: ['primary'] });
+client.onStackEvent({ type: 'stack.pop', affordance: 'primary', result: 'FAIL', stack: [] });
+server.onSelectionEvent({ type: 'affordance.selected', affordance: 'fallback', candidates: ['fallback'] });
+client.onStackEvent({ type: 'stack.push', affordance: 'fallback', result: null, stack: ['fallback'] });
+client.onStackEvent({ type: 'stack.pop', affordance: 'fallback', result: 'SUCCESS', stack: [] });
+assert.deepEqual(trace.events.map(e => e.sequence), [1,2,3,4,5,6]);
+assert.deepEqual(trace.events.map(e => e.type), ['affordance.selected','stack.push','stack.pop','affordance.selected','stack.push','stack.pop']);
+assert.deepEqual(seen, ['stack.push','stack.pop','stack.push','stack.pop']);
+assert.equal(trace.events[2].result, 'FAIL');
+assert.deepEqual(trace.events[2].stack, []);
+detach();
+client.onStackEvent({ type: 'after.detach' });
+assert.equal(seen.at(-1), 'after.detach');
+assert.equal(trace.events.length, 6);
+console.log('Pursuit trace collector regression passed.');

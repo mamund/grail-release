@@ -22,7 +22,8 @@ const suites = [
   'api/progress-reporting.js',
   'api/pursuit-duration.js',
   'api/stack-events.js',
-  'api/selection-events.js'
+  'api/selection-events.js',
+  'api/pursuit-trace.js'
 ];
 const timeoutMs = 30000;
 for (const suite of suites) {
