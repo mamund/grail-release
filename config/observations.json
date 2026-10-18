@@ -3,7 +3,7 @@
     "invocation": {
       "id": "inv-001",
       "affordance": "greet",
-      "timestamp": "2026-10-15T16:49:24.351Z",
+      "timestamp": "2026-10-18T21:21:34.427Z",
       "command": "python3",
       "args": [
         "./capabilities/greet.py"
@@ -13,7 +13,7 @@
       }
     },
     "timing": {
-      "durationMs": 28.450042
+      "durationMs": 29.06725
     },
     "response": {
       "exitCode": 0,

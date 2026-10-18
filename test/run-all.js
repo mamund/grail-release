@@ -15,6 +15,8 @@ const suites = [
   'cli/exit-contract.js',
   'cli/trace-export.js',
   'api/failure-recovery.js',
+  'api/world-root-portability.js',
+  'api/run-grail-world.js',
   'api/pursuit-stack.js',
   'api/independent-pursuits.js',
   'api/result-output-isolation.js',
