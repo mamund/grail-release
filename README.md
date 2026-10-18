@@ -299,6 +299,29 @@ The tour is designed to be run directly from the command line and includes all r
 
 GRAIL can also be loaded as a module by another application or front end.
 
+### Run a configured world
+
+For a filesystem-backed world, the new `runGrailWorld()` helper combines environment loading, a fresh runtime instance, and goal pursuit:
+
+```javascript
+import { runGrailWorld } from '@mamund/grail';
+
+const result = await runGrailWorld({
+  worldRoot: '/anywhere/on/disk/my-world',
+  inputs: { customerId: 'C200' },
+  inputMode: 'override',
+  goal: 'customerVerified'
+});
+
+console.log(result.reached);
+```
+
+Only `worldRoot` is required. By default, configuration is loaded from `<worldRoot>/config`, the goal comes from `goal.json`, and omitted inputs come from `inputs.json`. Supplied inputs use shallow `override` merging (caller wins) unless `inputMode: 'replace'` is specified. The helper returns the normal pursuit result, including unsuccessful pursuits, without interpreting domain outcomes. See [Running a GRAIL world from Node.js](./docs/run-grail-world.md) for the full contract and portability notes.
+
+**Availability:** `runGrailWorld()` is present in the updated development source. It is not part of the published v0.2.0 beta; consumers must install a release that exports it or install the updated local package.
+
+### Lower-level API
+
 Load a filesystem-based environment and pursue its goal:
 
 ```javascript
@@ -309,7 +332,8 @@ const environment = loadEnvironment('./config');
 const grail = new Grail({
   registry: environment.registry,
   worldstate: environment.worldstate,
-  inputs: environment.inputs
+  inputs: environment.inputs,
+  baseDir: environment.baseDir
 });
 
 const result = await grail.pursue(environment.goal);
@@ -318,6 +342,8 @@ console.log(result.reached);
 console.log(result.worldstate);
 console.log(result.observations);
 ```
+
+Pass `environment.baseDir` when constructing `Grail` directly to keep relative Node binding paths and stdio subprocess working directories rooted at the world, rather than at the invoking process.
 
 The `Grail` runtime itself does not require filesystem-backed observations. Observations are retained in memory by default. A caller can provide an `observationPath` when file persistence is wanted.
 
