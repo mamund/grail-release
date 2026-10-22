@@ -17,10 +17,12 @@ assert.equal(disabled.reached, false);
 assert.equal(Object.hasOwn(disabled, 'recovery'), false);
 const enabled = await grail.pursue('done', { recover: true });
 assert.equal(enabled.reached, false);
-assert.deepEqual(enabled.recovery, { enabled: true, attempted: true, recovered: 0, failed: 0, skipped: 0 });
+assert.ok(enabled.recovery.durationMs >= 0);
+  assert.deepEqual((({ durationMs, ...counts }) => counts)(enabled.recovery), { enabled: true, attempted: true, recovered: 0, failed: 0, skipped: 0 });
 assert.equal(Object.hasOwn(await grail.pursue('done'), 'recovery'), false, 'Override must not leak');
 const configured = new Grail({ registry, worldstate: { done: false }, recover: true });
-assert.deepEqual((await configured.pursue('done')).recovery, { enabled: true, attempted: true, recovered: 0, failed: 0, skipped: 0 });
+assert.ok((await configured.pursue('done')).recovery.durationMs >= 0);
+  assert.deepEqual((({ durationMs, ...counts }) => counts)((await configured.pursue('done')).recovery), { enabled: true, attempted: true, recovered: 0, failed: 0, skipped: 0 });
 assert.equal(Object.hasOwn(await configured.pursue('done', { recover: false }), 'recovery'), false);
 
 const fixture = createFixture('recovery-option');

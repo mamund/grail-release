@@ -54,7 +54,8 @@ try {
   const grail = new Grail({ registry, worldstate: {}, baseDir: root });
   const result = await grail.pursue('e', { recover: true });
   assert.equal(result.reached, false);
-  assert.deepEqual(result.recovery, { enabled: true, attempted: true, recovered: 1, failed: 3, skipped: 0 });
+  assert.ok(result.recovery.durationMs >= 0);
+  assert.deepEqual((({ durationMs, ...counts }) => counts)(result.recovery), { enabled: true, attempted: true, recovered: 1, failed: 3, skipped: 0 });
   assert.deepEqual(calls.map(c => c.url), [
     '/recover/http-error', '/recover/invalid', '/recover/fail', '/recover/success'
   ]);

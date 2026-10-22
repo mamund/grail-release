@@ -78,19 +78,22 @@ export class Grail {
       detachTrace?.();
     }
     const attempted = recover === true && this.client.unresolvable === true;
+    const forwardDurationMs = performance.now() - startedAt;
+    const recoveryStartedAt = attempted ? performance.now() : null;
     const recoveryCounts = attempted
       ? await recoverStack(this.server.recoveryStack, this.baseDir, this.observationStore, this.client.onProgress, pursuitId)
       : null;
+    const recoveryDurationMs = attempted ? performance.now() - recoveryStartedAt : null;
     const durationMs = performance.now() - startedAt;
 
     return {
       pursuitId,
       goal,
       reached: this.worldState.isPreconditionMet(goal),
-      timing: { durationMs },
+      timing: { durationMs, ...(attempted ? { forwardDurationMs, recoveryDurationMs, totalDurationMs: durationMs } : {}) },
       worldstate: { ...this.worldState.state },
       observations: [...this.observationStore.observations],
-      ...(recover === true ? { recovery: { enabled: true, attempted, ...(attempted ? recoveryCounts : {}) } } : {})
+      ...(recover === true ? { recovery: { enabled: true, attempted, ...(attempted ? { ...recoveryCounts, durationMs: recoveryDurationMs } : {}) } } : {})
     };
   }
 }

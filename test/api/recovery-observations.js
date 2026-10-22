@@ -24,7 +24,8 @@ export async function compensate() { return { result: 'SUCCESS', outputs: { mark
     observationPath: path.join(root, 'observations.json')
   });
   const result = await grail.pursue('done', { recover: true });
-  assert.deepEqual(result.recovery, { enabled: true, attempted: true, recovered: 1, failed: 0, skipped: 1 });
+  assert.ok(result.recovery.durationMs >= 0);
+  assert.deepEqual((({ durationMs, ...counts }) => counts)(result.recovery), { enabled: true, attempted: true, recovered: 1, failed: 0, skipped: 1 });
   assert.deepEqual(result.observations.map(o => o.phase), ['forward', 'forward', 'forward', 'recovery', 'recovery']);
   const [a, b, , skipped, recovered] = result.observations;
   assert.equal(skipped.result, 'SKIPPED');

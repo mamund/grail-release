@@ -46,7 +46,8 @@ export async function badCompensation() { return { result: 'FAIL' }; }
   }
   assert.equal(Object.hasOwn(completed[1], 'invocationId'), false);
   assert.deepEqual(recoveryEvents.at(-1), { type: 'recovery.completed', pursuitId: result.pursuitId, recovered: 1, failed: 1, skipped: 1 });
-  assert.deepEqual(result.recovery, { enabled: true, attempted: true, recovered: 1, failed: 1, skipped: 1 });
+  assert.ok(result.recovery.durationMs >= 0);
+  assert.deepEqual((({ durationMs, ...counts }) => counts)(result.recovery), { enabled: true, attempted: true, recovered: 1, failed: 1, skipped: 1 });
 
   for (const options of [{ recover: false }, { recover: true }]) {
     const success = new Grail({ registry: { a: registry.a }, worldstate: {}, baseDir: root });

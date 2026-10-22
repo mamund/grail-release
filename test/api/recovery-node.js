@@ -32,7 +32,8 @@ export async function explode() { throw new Error('recovery error'); }
   const grail = new Grail({ registry, worldstate: {}, baseDir: root });
   const result = await grail.pursue('done', { recover: true });
   assert.equal(result.reached, false);
-  assert.deepEqual(result.recovery, { enabled: true, attempted: true, recovered: 2, failed: 3, skipped: 1 });
+  assert.ok(result.recovery.durationMs >= 0);
+  assert.deepEqual((({ durationMs, ...counts }) => counts)(result.recovery), { enabled: true, attempted: true, recovered: 2, failed: 3, skipped: 1 });
   const calls = (await readFile(path.join(root, 'calls.txt'), 'utf8')).trim().split('\n').map(JSON.parse);
   assert.deepEqual(calls.map(c => c.invocationId), [result.observations[1].invocation.id, result.observations[0].invocation.id]);
   assert.ok(calls.every(c => c.pursuitId === result.pursuitId));
