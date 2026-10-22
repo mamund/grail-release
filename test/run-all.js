@@ -22,6 +22,7 @@ const suites = [
   'api/node-context.js',
   'api/http-context.js',
   'api/stdio-context.js',
+  'api/recovery-schema.js',
   'api/result-output-isolation.js',
   'api/interactive-stdio.js',
   'api/capability-timing.js',
