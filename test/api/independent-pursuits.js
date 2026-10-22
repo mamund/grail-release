@@ -31,6 +31,7 @@ function assertUniquePursuitId(result) {
 
 function assertUniqueInvocationId(observation) {
   const id = observation.invocation.id;
+  assert.match(observation.pursuitId, uuidPattern, 'Observation pursuit ID must be a UUID');
   assert.match(id, uuidPattern, 'Invocation ID must be a UUID');
   assert.equal(seenInvocationIds.has(id), false, 'Invocation IDs must be globally unique');
   seenInvocationIds.add(id);
@@ -41,12 +42,14 @@ assertUniquePursuitId(first);
 assert.equal(first.reached, true);
 assert.equal(first.observations.length, 1);
 assertUniqueInvocationId(first.observations[0]);
+assert.equal(first.observations[0].pursuitId, first.pursuitId, 'Observation must match pursuit result ID');
 
 const second = await grail.pursue('greetingCreated');
 assertUniquePursuitId(second);
 assert.equal(second.reached, true);
 assert.equal(second.observations.length, 1, 'Observations must not accumulate');
 assertUniqueInvocationId(second.observations[0]);
+assert.equal(second.observations[0].pursuitId, second.pursuitId, 'Observation must match pursuit result ID');
 
 const failed = await grail.pursue('failedGoal');
 assertUniquePursuitId(failed);
@@ -55,16 +58,19 @@ assert.equal(failed.worldstate.greetingCreated, false, 'Earlier effects must not
 assert.equal(failed.observations.length, 1);
 assert.equal(failed.observations[0].result, 'FAIL');
 assertUniqueInvocationId(failed.observations[0]);
+assert.equal(failed.observations[0].pursuitId, failed.pursuitId, 'Observation must match pursuit result ID');
 
 const retry = await grail.pursue('failedGoal');
 assertUniquePursuitId(retry);
 assert.equal(retry.reached, false);
 assert.equal(retry.observations.length, 1, 'Prior failures must not exclude next pursuit');
 assertUniqueInvocationId(retry.observations[0]);
+assert.equal(retry.observations[0].pursuitId, retry.pursuitId, 'Observation must match pursuit result ID');
 
 const afterFailure = await grail.pursue('greetingCreated');
 assertUniquePursuitId(afterFailure);
 assert.equal(afterFailure.reached, true);
 assert.equal(afterFailure.observations.length, 1);
 assertUniqueInvocationId(afterFailure.observations[0]);
+assert.equal(afterFailure.observations[0].pursuitId, afterFailure.pursuitId, 'Observation must match pursuit result ID');
 console.log('Independent pursuits regression passed.');

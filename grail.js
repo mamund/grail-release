@@ -50,6 +50,7 @@ export class Grail {
 
     this.resetPursuit();
     const pursuitId = randomUUID();
+    if (this.server) this.server.pursuitId = pursuitId;
     const detachTrace = pursuitTrace?.attach(this.client, this.server);
     this.client.onProgress = onProgress;
     const startedAt = performance.now();

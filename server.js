@@ -79,6 +79,7 @@ export class Server {
 
       const result = interaction.ok ? "SUCCESS" : "FAIL";
       this.observationStore.append({
+        pursuitId: this.pursuitId,
         invocation: {
           id: invocationId,
           affordance: affordance.action,

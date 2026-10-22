@@ -1,9 +1,10 @@
 [
   {
+    "pursuitId": "5013ff52-4f4b-4b85-a329-fe47e7ba3477",
     "invocation": {
-      "id": "032cc7bf-589c-4641-8480-e79e5450bff2",
+      "id": "477b8c01-48ea-4725-b8d9-0f44533c7735",
       "affordance": "createGreeting",
-      "timestamp": "2026-10-22T15:17:24.850Z",
+      "timestamp": "2026-10-22T15:24:04.654Z",
       "module": "./capabilities/hello.js",
       "function": "createGreeting",
       "inputs": {
@@ -11,7 +12,7 @@
       }
     },
     "timing": {
-      "durationMs": 1.566092
+      "durationMs": 1.188882
     },
     "response": {
       "result": {
