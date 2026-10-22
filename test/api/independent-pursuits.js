@@ -20,28 +20,39 @@ const registry = {
 };
 const grail = new Grail({ registry, worldstate: {}, inputs: { name: 'World' }, baseDir });
 
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const seenInvocationIds = new Set();
+function assertUniqueInvocationId(observation) {
+  const id = observation.invocation.id;
+  assert.match(id, uuidPattern, 'Invocation ID must be a UUID');
+  assert.equal(seenInvocationIds.has(id), false, 'Invocation IDs must be globally unique');
+  seenInvocationIds.add(id);
+}
+
 const first = await grail.pursue('greetingCreated');
 assert.equal(first.reached, true);
 assert.equal(first.observations.length, 1);
-assert.equal(first.observations[0].invocation.id, 'inv-001');
+assertUniqueInvocationId(first.observations[0]);
 
 const second = await grail.pursue('greetingCreated');
 assert.equal(second.reached, true);
 assert.equal(second.observations.length, 1, 'Observations must not accumulate');
-assert.equal(second.observations[0].invocation.id, 'inv-001', 'Invocation counter resets');
+assertUniqueInvocationId(second.observations[0]);
 
 const failed = await grail.pursue('failedGoal');
 assert.equal(failed.reached, false);
 assert.equal(failed.worldstate.greetingCreated, false, 'Earlier effects must not persist');
 assert.equal(failed.observations.length, 1);
 assert.equal(failed.observations[0].result, 'FAIL');
+assertUniqueInvocationId(failed.observations[0]);
 
 const retry = await grail.pursue('failedGoal');
 assert.equal(retry.reached, false);
 assert.equal(retry.observations.length, 1, 'Prior failures must not exclude next pursuit');
-assert.equal(retry.observations[0].invocation.id, 'inv-001');
+assertUniqueInvocationId(retry.observations[0]);
 
 const afterFailure = await grail.pursue('greetingCreated');
 assert.equal(afterFailure.reached, true);
 assert.equal(afterFailure.observations.length, 1);
+assertUniqueInvocationId(afterFailure.observations[0]);
 console.log('Independent pursuits regression passed.');

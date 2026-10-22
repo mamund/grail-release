@@ -1,16 +1,15 @@
 import fs from "node:fs";
+import { randomUUID } from "node:crypto";
 
 export class ObservationStore {
   constructor(filePath) {
     this.filePath = filePath;
     this.observations = [];
-    this.invocationCounter = 0;
     this.persist();
   }
 
   nextInvocationId() {
-    this.invocationCounter += 1;
-    return `inv-${String(this.invocationCounter).padStart(3, "0")}`;
+    return randomUUID();
   }
 
   append(observation) {

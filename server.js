@@ -64,6 +64,7 @@ export class Server {
       affordance.binding.enabled !== false
     ) {
       // Measure only the actual binding invocation, not precondition resolution.
+      const invocationId = this.observationStore.nextInvocationId();
       const startedAt = new Date().toISOString();
       const startNs = process.hrtime.bigint();
       this.onProgress?.({ type: "capability.started", goal: this.goal, affordance: affordance.action });
@@ -79,7 +80,7 @@ export class Server {
       const result = interaction.ok ? "SUCCESS" : "FAIL";
       this.observationStore.append({
         invocation: {
-          id: this.observationStore.nextInvocationId(),
+          id: invocationId,
           affordance: affordance.action,
           timestamp: startedAt,
           ...interaction.invocation
