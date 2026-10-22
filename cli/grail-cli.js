@@ -48,7 +48,7 @@ Options:
   --inputs <json>        Override inputs with a JSON object (run only)
   --inputs-file <file>   Override inputs from a JSON file (run only)
   --output <mode>        Result format: summary or json (run only)
-  --trace <file>         Save pursuit selection/stack events as JSON (run only)
+  --trace <file>         Save pursuit selection/stack and recovery events as JSON (run only)
   --recover              Enable pursuit recovery (run only)
   --progress             Send pursuit progress to stderr (run only)
   --no-progress          Suppress live progress messages (run only)
@@ -99,7 +99,7 @@ Options:
   --inputs <json>        Replace inputs.json for this run with an inline JSON object
   --inputs-file <file>   Replace inputs.json for this run with a JSON file
   --output <mode>        Print a summary or complete JSON result (default: existing trace)
-  --trace <file>         Save ordered pursuit selection and stack events as JSON
+  --trace <file>         Save ordered pursuit selection, stack, and recovery events as JSON
   --recover              Enable pursuit recovery
   --progress             Send pursuit progress to stderr
   --no-progress          Suppress progress and runtime trace

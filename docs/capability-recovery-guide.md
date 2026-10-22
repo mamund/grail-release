@@ -132,7 +132,9 @@ The process must write a JSON result to stdout:
 { "result": "SUCCESS" }
 ```
 
-A nonzero exit, invalid JSON, execution error, or any result other than `SUCCESS` counts as a recovery failure. The forward stdio capability separately receives `GRAIL_PURSUIT_ID` and `GRAIL_INVOCATION_ID` in its **child-process environment**; the parent environment is not mutated.
+The recovery subprocess also receives the **original forward invocation identifiers** through its child-process environment: `GRAIL_PURSUIT_ID` matches the stdin `pursuitId`, and `GRAIL_INVOCATION_ID` matches the stdin `invocationId`. The forward stdio capability receives these environment variables for its own invocation as well. GRAIL does not mutate the parent process environment.
+
+A nonzero exit, invalid JSON, execution error, or any result other than `SUCCESS` counts as a recovery failure.
 
 ## 6. Outcomes and failure isolation
 
