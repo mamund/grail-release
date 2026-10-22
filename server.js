@@ -71,7 +71,8 @@ export class Server {
       const interaction = await executeBinding(
         affordance.binding,
         resolvedInputs,
-        this.baseDir
+        this.baseDir,
+        { pursuitId: this.pursuitId, invocationId }
       );
       const durationMs = Number(process.hrtime.bigint() - startNs) / 1e6;
 
