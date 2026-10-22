@@ -11,7 +11,7 @@ export async function executeBinding(binding, inputs, baseDir = process.cwd(), c
       return executeNode(binding, inputs, baseDir, context);
 
     case "stdio":
-      return executeStdio(binding, inputs, baseDir);
+      return executeStdio(binding, inputs, baseDir, context);
 
     default:
       throw new Error(`Unsupported binding protocol: ${binding.protocol}`);
@@ -77,9 +77,9 @@ async function executeNode(binding, inputs, baseDir, context) {
   }
 }
 
-async function executeStdio(binding, inputs, baseDir) {
+async function executeStdio(binding, inputs, baseDir, context) {
   try {
-    const interaction = await executeStdioBinding(binding, inputs, baseDir);
+    const interaction = await executeStdioBinding(binding, inputs, baseDir, context);
 
     const ok =
       interaction.exitCode === 0 &&
