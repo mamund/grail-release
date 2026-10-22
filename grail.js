@@ -72,19 +72,24 @@ export class Grail {
         }
       };
     }
+    let attempted;
+    let forwardDurationMs;
+    let recoveryDurationMs;
+    let recoveryCounts;
+    let durationMs;
     try {
       await this.client.pursue(goal);
+      attempted = recover === true && this.client.unresolvable === true;
+      forwardDurationMs = performance.now() - startedAt;
+      const recoveryStartedAt = attempted ? performance.now() : null;
+      recoveryCounts = attempted
+        ? await recoverStack(this.server.recoveryStack, this.baseDir, this.observationStore, this.client.onProgress, pursuitId, pursuitTrace?.record)
+        : null;
+      recoveryDurationMs = attempted ? performance.now() - recoveryStartedAt : null;
+      durationMs = performance.now() - startedAt;
     } finally {
       detachTrace?.();
     }
-    const attempted = recover === true && this.client.unresolvable === true;
-    const forwardDurationMs = performance.now() - startedAt;
-    const recoveryStartedAt = attempted ? performance.now() : null;
-    const recoveryCounts = attempted
-      ? await recoverStack(this.server.recoveryStack, this.baseDir, this.observationStore, this.client.onProgress, pursuitId)
-      : null;
-    const recoveryDurationMs = attempted ? performance.now() - recoveryStartedAt : null;
-    const durationMs = performance.now() - startedAt;
 
     return {
       pursuitId,
@@ -167,13 +172,17 @@ function notifyRecoveryProgress(onProgress, event) {
   }
 }
 
-async function recoverStack(stack, baseDir, observationStore, onProgress, pursuitId) {
+async function recoverStack(stack, baseDir, observationStore, onProgress, pursuitId, recordTrace) {
+  const notify = event => {
+    try { recordTrace?.(event); } catch { /* Tracing is diagnostic. */ }
+    notifyRecoveryProgress(onProgress, event);
+  };
   const counts = { recovered: 0, failed: 0, skipped: 0 };
-  notifyRecoveryProgress(onProgress, { type: 'recovery.started', pursuitId, total: stack.length });
+  notify({ type: 'recovery.started', pursuitId, total: stack.length });
   for (let i = stack.length - 1; i >= 0; i--) {
     const entry = stack[i];
     const recoveryInvocationId = entry.binding.recover ? randomUUID() : undefined;
-    if (recoveryInvocationId) notifyRecoveryProgress(onProgress, { type: 'recovery.invocation.started', pursuitId, invocationId: recoveryInvocationId, originalInvocationId: entry.invocationId, affordance: entry.affordance });
+    if (recoveryInvocationId) notify({ type: 'recovery.invocation.started', pursuitId, invocationId: recoveryInvocationId, originalInvocationId: entry.invocationId, affordance: entry.affordance });
     const startedAt = new Date().toISOString();
     const start = performance.now();
     const outcome = await recoverNode(entry, baseDir);
@@ -182,7 +191,7 @@ async function recoverStack(stack, baseDir, observationStore, onProgress, pursui
     else if (outcome.status === 'RECOVERY_FAILED') counts.failed++;
     else counts.skipped++;
 
-    notifyRecoveryProgress(onProgress, { type: 'recovery.invocation.completed', pursuitId, ...(recoveryInvocationId ? { invocationId: recoveryInvocationId } : {}), originalInvocationId: entry.invocationId, affordance: entry.affordance, status: outcome.status, durationMs });
+    notify({ type: 'recovery.invocation.completed', pursuitId, ...(recoveryInvocationId ? { invocationId: recoveryInvocationId } : {}), originalInvocationId: entry.invocationId, affordance: entry.affordance, status: outcome.status, durationMs });
     observationStore.append({
       phase: 'recovery',
       pursuitId: entry.pursuitId,
@@ -199,6 +208,6 @@ async function recoverStack(stack, baseDir, observationStore, onProgress, pursui
       result: outcome.status
     });
   }
-  notifyRecoveryProgress(onProgress, { type: 'recovery.completed', pursuitId, ...counts });
+  notify({ type: 'recovery.completed', pursuitId, ...counts });
   return counts;
 }

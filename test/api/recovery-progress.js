@@ -3,6 +3,7 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Grail } from '../../grail.js';
+import { createPursuitTrace } from '../../pursuitTrace.js';
 
 const root = await mkdtemp(path.join(tmpdir(), 'grail-recovery-progress-'));
 try {
@@ -78,6 +79,45 @@ export async function badCompensation() { return { result: 'FAIL' }; }
     assert.deepEqual(records.map(o => o.invocation.affordance), ['c', 'b', 'a']);
     assert.equal(records.every(o => !Object.hasOwn(o, 'error') || !String(o.error).includes('Observer failed')), true);
   }
+
+  // The pursuit trace records recovery independently of the progress observer.
+  const trace = createPursuitTrace();
+  const traced = await grail.pursue('done', {
+    recover: true,
+    pursuitTrace: trace,
+    onProgress(event) {
+      if (event.type.startsWith('recovery.')) throw new Error('Broken observer');
+    }
+  });
+  const tracedRecovery = trace.events.filter(e => e.type.startsWith('recovery.'));
+  assert.deepEqual(tracedRecovery.map(e => e.type), recoveryEvents.map(e => e.type));
+  assert.deepEqual(tracedRecovery.filter(e => e.type === 'recovery.invocation.completed').map(e => e.affordance), ['c', 'b', 'a']);
+  assert.deepEqual(tracedRecovery.filter(e => e.type === 'recovery.invocation.completed').map(e => e.status), ['RECOVERY_FAILED', 'SKIPPED', 'RECOVERED']);
+  assert.ok(tracedRecovery.every(e => e.pursuitId === traced.pursuitId));
+  assert.deepEqual(trace.events.map(e => e.sequence), trace.events.map((_, i) => i + 1));
+  assert.ok(trace.events.findIndex(e => e.type === 'recovery.started') > 0);
+  const recoveredObservations = traced.observations.filter(o => o.phase === 'recovery');
+  for (let i = 0; i < recoveredObservations.length; i++) {
+    const completedEvent = tracedRecovery.filter(e => e.type === 'recovery.invocation.completed')[i];
+    assert.equal(completedEvent.originalInvocationId, recoveredObservations[i].originalInvocationId);
+    assert.equal(completedEvent.invocationId, recoveredObservations[i].invocation.id);
+  }
+  assert.equal(Object.hasOwn(tracedRecovery.find(e => e.type === 'recovery.invocation.completed' && e.status === 'SKIPPED'), 'invocationId'), false);
+  assert.deepEqual((({ type, pursuitId, sequence, ...counts }) => counts)(tracedRecovery.at(-1)), { recovered: 1, failed: 1, skipped: 1 });
+
+  // Tracing also works when no onProgress callback is registered.
+  const traceOnly = createPursuitTrace();
+  await grail.pursue('done', { recover: true, pursuitTrace: traceOnly });
+  assert.deepEqual(traceOnly.events.filter(e => e.type.startsWith('recovery.')).map(e => e.type), recoveryEvents.map(e => e.type));
+
+  // Disabled recovery and successful pursuits do not create recovery trace events.
+  const disabledTrace = createPursuitTrace();
+  await grail.pursue('done', { recover: false, pursuitTrace: disabledTrace });
+  assert.equal(disabledTrace.events.some(e => e.type.startsWith('recovery.')), false);
+  const successfulTrace = createPursuitTrace();
+  const successfulGrail = new Grail({ registry: { a: registry.a }, worldstate: {}, baseDir: root });
+  await successfulGrail.pursue('a', { recover: true, pursuitTrace: successfulTrace });
+  assert.equal(successfulTrace.events.some(e => e.type.startsWith('recovery.')), false);
 
   for (const options of [{ recover: false }, { recover: true }]) {
     const success = new Grail({ registry: { a: registry.a }, worldstate: {}, baseDir: root });
