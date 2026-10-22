@@ -79,7 +79,7 @@ export class Grail {
     }
     const attempted = recover === true && this.client.unresolvable === true;
     const recoveryCounts = attempted
-      ? await recoverStack(this.server.recoveryStack, this.baseDir, this.observationStore)
+      ? await recoverStack(this.server.recoveryStack, this.baseDir, this.observationStore, this.client.onProgress, pursuitId)
       : null;
     const durationMs = performance.now() - startedAt;
 
@@ -155,10 +155,13 @@ async function recoverStdio({ binding, pursuitId, invocationId }, baseDir) {
   }
 }
 
-async function recoverStack(stack, baseDir, observationStore) {
+async function recoverStack(stack, baseDir, observationStore, onProgress, pursuitId) {
   const counts = { recovered: 0, failed: 0, skipped: 0 };
+  onProgress?.({ type: 'recovery.started', pursuitId, total: stack.length });
   for (let i = stack.length - 1; i >= 0; i--) {
     const entry = stack[i];
+    const recoveryInvocationId = entry.binding.recover ? randomUUID() : undefined;
+    if (recoveryInvocationId) onProgress?.({ type: 'recovery.invocation.started', pursuitId, invocationId: recoveryInvocationId, originalInvocationId: entry.invocationId, affordance: entry.affordance });
     const startedAt = new Date().toISOString();
     const start = performance.now();
     const outcome = await recoverNode(entry, baseDir);
@@ -167,12 +170,13 @@ async function recoverStack(stack, baseDir, observationStore) {
     else if (outcome.status === 'RECOVERY_FAILED') counts.failed++;
     else counts.skipped++;
 
+    onProgress?.({ type: 'recovery.invocation.completed', pursuitId, ...(recoveryInvocationId ? { invocationId: recoveryInvocationId } : {}), originalInvocationId: entry.invocationId, affordance: entry.affordance, status: outcome.status, durationMs });
     observationStore.append({
       phase: 'recovery',
       pursuitId: entry.pursuitId,
       originalInvocationId: entry.invocationId,
       invocation: {
-        ...(outcome.status !== 'SKIPPED' ? { id: randomUUID() } : {}),
+        ...(recoveryInvocationId ? { id: recoveryInvocationId } : {}),
         affordance: entry.affordance,
         timestamp: startedAt
       },
@@ -183,5 +187,6 @@ async function recoverStack(stack, baseDir, observationStore) {
       result: outcome.status
     });
   }
+  onProgress?.({ type: 'recovery.completed', pursuitId, ...counts });
   return counts;
 }
