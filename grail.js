@@ -14,7 +14,7 @@ import { randomUUID } from 'node:crypto';
  * of the calling application.
  */
 export class Grail {
-  constructor({ registry, worldstate, inputs = {}, observationPath, baseDir = process.cwd() }) {
+  constructor({ registry, worldstate, inputs = {}, observationPath, baseDir = process.cwd(), recover = false }) {
     if (!registry) {
       throw new Error('Grail requires a registry.');
     }
@@ -23,6 +23,7 @@ export class Grail {
       throw new Error('Grail requires worldstate.');
     }
 
+    this.recover = recover === true;
     this.inputs = inputs;
     this.affordanceRegistry = loadAffordanceRegistry(registry);
     this.initialWorldstate = { ...worldstate };
@@ -43,7 +44,7 @@ export class Grail {
     this.client = new Client(this.server, this.inputs);
   }
 
-  async pursue(goal, { onProgress, pursuitTrace } = {}) {
+  async pursue(goal, { onProgress, pursuitTrace, recover = this.recover } = {}) {
     if (!goal) {
       throw new Error('Grail.pursue requires a goal.');
     }
@@ -79,7 +80,8 @@ export class Grail {
       reached: this.worldState.isPreconditionMet(goal),
       timing: { durationMs },
       worldstate: { ...this.worldState.state },
-      observations: [...this.observationStore.observations]
+      observations: [...this.observationStore.observations],
+      ...(recover === true ? { recovery: { enabled: true, attempted: false } } : {})
     };
   }
 }

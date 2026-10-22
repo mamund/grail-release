@@ -1,9 +1,10 @@
 [
   {
+    "pursuitId": "d78b0707-ae89-4e0a-9808-bee5f1ad2413",
     "invocation": {
-      "id": "inv-001",
+      "id": "3256a375-da16-40b5-8f02-c50f78e4bfb2",
       "affordance": "greet",
-      "timestamp": "2026-10-18T21:21:34.427Z",
+      "timestamp": "2026-10-22T15:55:53.115Z",
       "command": "python3",
       "args": [
         "./capabilities/greet.py"
@@ -13,7 +14,7 @@
       }
     },
     "timing": {
-      "durationMs": 29.06725
+      "durationMs": 28.08053
     },
     "response": {
       "exitCode": 0,
