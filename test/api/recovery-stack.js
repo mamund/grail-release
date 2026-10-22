@@ -25,7 +25,7 @@ export async function fail() { throw new Error('intentional failure'); }
 
   const enabled = await grail.pursue('done', { recover: true });
   assert.equal(enabled.reached, false);
-  assert.equal(enabled.recovery.attempted, false, 'No compensation in this increment');
+  assert.equal(enabled.recovery.attempted, true, 'Unresolvable pursuit triggers recovery, without compensation yet');
   assert.equal(Object.hasOwn(enabled, 'recoveryStack'), false, 'Stack stays internal');
   assert.equal(grail.server.recoveryStack.length, 2, 'Only successful invocations are stacked');
   const [first, second] = grail.server.recoveryStack;

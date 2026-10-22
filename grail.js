@@ -84,7 +84,7 @@ export class Grail {
       timing: { durationMs },
       worldstate: { ...this.worldState.state },
       observations: [...this.observationStore.observations],
-      ...(recover === true ? { recovery: { enabled: true, attempted: false } } : {})
+      ...(recover === true ? { recovery: { enabled: true, attempted: this.client.unresolvable === true } } : {})
     };
   }
 }
