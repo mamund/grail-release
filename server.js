@@ -9,6 +9,8 @@ export class Server {
     this.baseDir = baseDir;
     this.onProgress = null;
     this.goal = null;
+    this.recoveryEnabled = false;
+    this.recoveryStack = [];
     this.onSelectionEvent = null; // Optional diagnostic callback, separate from progress.
   }
 
@@ -102,6 +104,17 @@ export class Server {
           result: "FAIL",
           offeredAffordances: []
         };
+      }
+
+      // Record successful forward invocations for possible LIFO compensation.
+      // No handler is invoked here; entries remain internal to this pursuit.
+      if (this.recoveryEnabled) {
+        this.recoveryStack.push({
+          pursuitId: this.pursuitId,
+          invocationId,
+          affordance: affordance.action,
+          binding: affordance.binding
+        });
       }
 
       console.log(`[SERVER] Binding succeeded: ${interaction.summary}`);
