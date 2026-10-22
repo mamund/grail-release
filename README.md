@@ -17,7 +17,7 @@ The environment defines the possibilities. GRAIL pursues the goal without requir
 
 ## Status
 
-**GRAIL v0.2.0 is available as a public beta.** This release includes interactive stdio capabilities, structured progress reporting, capability and pursuit timing, and a programmatic API for embedding GRAIL in other applications. GRAIL remains in beta; interfaces and implementation details may evolve.
+**GRAIL v0.2.0 is available as a public beta.** This release includes interactive stdio capabilities, structured progress reporting, capability and pursuit timing, and a programmatic API for embedding GRAIL in other applications. GRAIL remains in beta; interfaces and implementation details may evolve. Recovery v1 is implemented in the development source but is not part of the published v0.2.0 beta.
 
 ## Quick start
 
@@ -199,6 +199,18 @@ grail run --output json
 
 `summary` prints the goal, success or failure, capability invocation count, captured outputs, and total pursuit duration. `json` prints the complete pursuit result (`goal`, `reached`, `worldstate`, `observations`, and `timing`) as valid JSON suitable for tools such as `jq`. Routine runtime trace messages are suppressed in these modes; errors still appear on stderr. Omitting `--output` preserves the existing trace. The option accepts both `--output json` and `--output=json`. Invalid modes exit with code `2`.
 
+### Optional recovery (development branch)
+
+Use `--recover` to enable best-effort compensation when a pursuit becomes unresolvable after normal affordance alternatives have been exhausted:
+
+```bash
+grail run --recover --output=summary
+```
+
+Recovery is disabled by default. When enabled, GRAIL records successful capability invocations and, if the pursuit becomes unresolvable, invokes declared recovery handlers in reverse completion order. A failed capability invocation does not itself trigger recovery. The summary reports recovered, failed, and skipped compensation attempts when recovery is attempted. The original goal result and CLI exit status are unchanged by compensation.
+
+Recovery v1 is available in the development source, **not** the published v0.2.0 beta. See [Capability Recovery Guide](./docs/capability-recovery-guide.md) for handler contracts and [Recovery v1 Specification](./docs/recovery-spec.md) for the design and limitations.
+
 ### Progress reporting
 
 Use `--progress` to receive live progress events on stderr while keeping the final summary or JSON result on stdout:
@@ -364,6 +376,26 @@ Events include `pursuit.started`, `capability.started`, `capability.completed`, 
 For a complete working example, see [API Consumer](./examples/api-consumer/README.md). It demonstrates goal pursuit, structured progress events, execution timing, and unresolvable-goal handling using GRAIL as an installed npm dependency.
 
 
+### Recovery from the Node API (development branch)
+
+Recovery can be enabled when constructing a runtime or for an individual pursuit:
+
+```javascript
+const grail = new Grail({
+  registry: environment.registry,
+  worldstate: environment.worldstate,
+  inputs: environment.inputs,
+  baseDir: environment.baseDir,
+  recover: true
+});
+
+const result = await grail.pursue(environment.goal);
+// Or override the setting for one pursuit:
+// const result = await grail.pursue(environment.goal, { recover: true });
+```
+
+Recovery is off by default. With recovery enabled, the result includes a `recovery` object; when compensation is attempted it reports `recovered`, `failed`, `skipped`, and duration. Without recovery enabled, the property is omitted. The result's `reached` field continues to describe the original goal, not the compensation outcome. The portable `runGrailWorld()` helper also accepts a `recover` option in the development source.
+
 ## Bindings
 
 An affordance may be connected to an executable capability through a binding. The current runtime supports three protocols:
@@ -373,6 +405,14 @@ An affordance may be connected to an executable capability through a binding. Th
 | `node` | Invoke a local JavaScript module and exported function. |
 | `http` | Invoke a capability through HTTP. |
 | `stdio` | Launch a local process and consume JSON output from stdout; supports ordinary and interactive execution. |
+
+### Recovery handlers (development branch)
+
+A binding may optionally declare a `recover` handler. Node handlers can name an exported function in the same module or specify a separate module and function; HTTP handlers specify a method and URL; stdio handlers specify a command and arguments. GRAIL validates declaration syntax without requiring the handler to be available until compensation is attempted.
+
+Recovery handlers receive the **original** pursuit and invocation identifiers, rather than the original domain inputs. They are responsible for locating the side effect, making compensation safe to repeat, and returning `SUCCESS` or `FAIL`. GRAIL records recovery observations and progress events separately from forward effects, and does not alter Boolean worldstate during compensation.
+
+For examples of all three bindings, see [Capability Recovery Guide](./docs/capability-recovery-guide.md). A runnable Node-based example is available in the separate `grail-worlds/recovery-demo` world.
 
 ### Interactive stdio capabilities
 
@@ -396,7 +436,7 @@ Run the current automated test suite with:
 npm test
 ```
 
-The suite covers end-to-end goal pursuit through the public API, stdio execution and output handling, world-relative path resolution, goal and input invocation overrides, stack and selection telemetry, pursuit trace collection and CLI export, and CLI behavior including configuration errors, execution failures, pursuit failures, messages, and exit codes.
+The suite covers end-to-end goal pursuit through the public API, stdio execution and output handling, world-relative path resolution, goal and input invocation overrides, stack and selection telemetry, pursuit trace collection and CLI export, and CLI behavior including configuration errors, execution failures, pursuit failures, messages, and exit codes, execution identity propagation, and recovery configuration, dispatch, observations, progress, timing, and CLI reporting.
 
 Tests run as independent suites with start/pass/fail reporting and a 30-second timeout per suite. The CLI regression tests are organized under `test/cli/` into commands, show, output, overrides, and errors. Run an individual suite directly, for example:
 
