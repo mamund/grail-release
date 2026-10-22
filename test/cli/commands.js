@@ -3,8 +3,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createFixture } from './helpers.js';
 
+// Read the expected version from package.json.
+const { version } = JSON.parse(
+  fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
+);
+
 const fixture = createFixture('cli-commands');
 const { tempDir, sourceConfigDir, runCli, copyConfig, writeJson, assertExit } = fixture;
+
 try {
   // Stable success behavior.
   {
@@ -21,7 +27,7 @@ try {
   {
     const result = runCli(['--version']);
     assertExit(result, 0, '--version should succeed');
-    assert.match(result.stdout, /^0\.2\.0\s*$/);
+    assert.equal(result.stdout.trim(), version);
   }
 
   {
@@ -29,7 +35,9 @@ try {
     assertExit(result, 0, 'valid configuration should validate');
     assert.match(result.stdout, /VALID:/);
   }
+
   console.log('CLI commands regression passed.');
 } finally {
   fixture.cleanup();
 }
+
