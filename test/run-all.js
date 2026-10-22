@@ -27,6 +27,8 @@ const suites = [
   'api/recovery-stack.js',
   'api/recovery-trigger.js',
   'api/recovery-node.js',
+  'api/recovery-http.js',
+  'api/recovery-stdio.js',
   'api/result-output-isolation.js',
   'api/interactive-stdio.js',
   'api/capability-timing.js',

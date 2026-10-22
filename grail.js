@@ -79,7 +79,7 @@ export class Grail {
     }
     const attempted = recover === true && this.client.unresolvable === true;
     const recoveryCounts = attempted
-      ? await recoverNodeStack(this.server.recoveryStack, this.baseDir)
+      ? await recoverStack(this.server.recoveryStack, this.baseDir)
       : null;
     const durationMs = performance.now() - startedAt;
 
@@ -100,7 +100,9 @@ async function recoverNode(entry, baseDir) {
   const { binding, pursuitId, invocationId } = entry;
   const declaration = binding.recover;
   if (!declaration) return 'SKIPPED';
-  if (binding.protocol !== 'node') return 'SKIPPED'; // Other protocols are not implemented yet.
+  if (binding.protocol === 'http') return recoverHttp(entry);
+  if (binding.protocol === 'stdio') return recoverStdio(entry, baseDir);
+  if (binding.protocol !== 'node') return 'SKIPPED';
 
   try {
     const moduleName = typeof declaration === 'string' ? binding.module : declaration.module;
@@ -115,7 +117,41 @@ async function recoverNode(entry, baseDir) {
   }
 }
 
-async function recoverNodeStack(stack, baseDir) {
+// HTTP recovery uses the declared endpoint and original invocation identity only.
+async function recoverHttp({ binding, pursuitId, invocationId }) {
+  try {
+    const response = await fetch(binding.recover.url, {
+      method: binding.recover.method,
+      headers: {
+        'Grail-Pursuit-Id': pursuitId,
+        'Grail-Invocation-Id': invocationId
+      }
+    });
+    if (!response.ok) return 'RECOVERY_FAILED';
+    const body = await response.json();
+    return body?.result === 'SUCCESS' ? 'RECOVERED' : 'RECOVERY_FAILED';
+  } catch {
+    return 'RECOVERY_FAILED';
+  }
+}
+
+// STDIO recovery uses a separate noninteractive process with only the original IDs on stdin.
+async function recoverStdio({ binding, pursuitId, invocationId }, baseDir) {
+  try {
+    const { executeStdioBinding } = await import('./bindings/stdioBinding.js');
+    const interaction = await executeStdioBinding(
+      { ...binding.recover, interactive: false },
+      { pursuitId, invocationId },
+      baseDir
+    );
+    if (interaction.exitCode !== 0 || interaction.error) return 'RECOVERY_FAILED';
+    return interaction.stdout?.result === 'SUCCESS' ? 'RECOVERED' : 'RECOVERY_FAILED';
+  } catch {
+    return 'RECOVERY_FAILED';
+  }
+}
+
+async function recoverStack(stack, baseDir) {
   const counts = { recovered: 0, failed: 0, skipped: 0 };
   for (let i = stack.length - 1; i >= 0; i--) {
     const status = await recoverNode(stack[i], baseDir);
