@@ -22,6 +22,13 @@ const grail = new Grail({ registry, worldstate: {}, inputs: { name: 'World' }, b
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const seenInvocationIds = new Set();
+const seenPursuitIds = new Set();
+function assertUniquePursuitId(result) {
+  assert.match(result.pursuitId, uuidPattern, 'Pursuit ID must be a UUID');
+  assert.equal(seenPursuitIds.has(result.pursuitId), false, 'Pursuit IDs must be globally unique');
+  seenPursuitIds.add(result.pursuitId);
+}
+
 function assertUniqueInvocationId(observation) {
   const id = observation.invocation.id;
   assert.match(id, uuidPattern, 'Invocation ID must be a UUID');
@@ -30,16 +37,19 @@ function assertUniqueInvocationId(observation) {
 }
 
 const first = await grail.pursue('greetingCreated');
+assertUniquePursuitId(first);
 assert.equal(first.reached, true);
 assert.equal(first.observations.length, 1);
 assertUniqueInvocationId(first.observations[0]);
 
 const second = await grail.pursue('greetingCreated');
+assertUniquePursuitId(second);
 assert.equal(second.reached, true);
 assert.equal(second.observations.length, 1, 'Observations must not accumulate');
 assertUniqueInvocationId(second.observations[0]);
 
 const failed = await grail.pursue('failedGoal');
+assertUniquePursuitId(failed);
 assert.equal(failed.reached, false);
 assert.equal(failed.worldstate.greetingCreated, false, 'Earlier effects must not persist');
 assert.equal(failed.observations.length, 1);
@@ -47,11 +57,13 @@ assert.equal(failed.observations[0].result, 'FAIL');
 assertUniqueInvocationId(failed.observations[0]);
 
 const retry = await grail.pursue('failedGoal');
+assertUniquePursuitId(retry);
 assert.equal(retry.reached, false);
 assert.equal(retry.observations.length, 1, 'Prior failures must not exclude next pursuit');
 assertUniqueInvocationId(retry.observations[0]);
 
 const afterFailure = await grail.pursue('greetingCreated');
+assertUniquePursuitId(afterFailure);
 assert.equal(afterFailure.reached, true);
 assert.equal(afterFailure.observations.length, 1);
 assertUniqueInvocationId(afterFailure.observations[0]);

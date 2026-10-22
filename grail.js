@@ -4,6 +4,7 @@ import { ObservationStore } from './observationStore.js';
 import { Server } from './server.js';
 import { Client } from './client.js';
 import { performance } from 'node:perf_hooks';
+import { randomUUID } from 'node:crypto';
 
 /**
  * Public facade for the GRAIL runtime.
@@ -48,6 +49,7 @@ export class Grail {
     }
 
     this.resetPursuit();
+    const pursuitId = randomUUID();
     const detachTrace = pursuitTrace?.attach(this.client, this.server);
     this.client.onProgress = onProgress;
     const startedAt = performance.now();
@@ -71,6 +73,7 @@ export class Grail {
     const durationMs = performance.now() - startedAt;
 
     return {
+      pursuitId,
       goal,
       reached: this.worldState.isPreconditionMet(goal),
       timing: { durationMs },
