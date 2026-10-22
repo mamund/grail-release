@@ -100,7 +100,7 @@ Options:
   --inputs-file <file>   Replace inputs.json for this run with a JSON file
   --output <mode>        Print a summary or complete JSON result (default: existing trace)
   --trace <file>         Save ordered pursuit selection and stack events as JSON
-  --recover              Enable pursuit recovery (no handlers executed yet)
+  --recover              Enable pursuit recovery
   --progress             Send pursuit progress to stderr
   --no-progress          Suppress progress and runtime trace
   --help, -h             Show help`);
@@ -434,6 +434,18 @@ function formatSummary(result) {
     `Duration: ${formatDuration(result.timing?.durationMs)}`,
     `Capability invocations: ${result.observations.length}`
   ];
+  if (result.recovery?.attempted === true) {
+    const { recovered, failed, skipped, durationMs } = result.recovery;
+    lines.push(
+      '',
+      'Recovery:',
+      '  Attempted: yes',
+      `  Recovered: ${recovered}`,
+      `  Failed:    ${failed}`,
+      `  Skipped:   ${skipped}`,
+      `  Duration:  ${durationMs.toFixed(2)} ms`
+    );
+  }
   for (const observation of result.observations) {
     lines.push('', `${observation.invocation?.affordance ?? 'Unknown affordance'}: ${observation.result}`);
     for (const [key, value] of Object.entries(observation.outputs ?? {})) {

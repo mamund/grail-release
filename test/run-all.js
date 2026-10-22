@@ -10,6 +10,7 @@ const suites = [
   'cli/init-portability.js',
   'cli/show.js',
   'cli/output.js',
+  'cli/recovery-summary.js',
   'cli/overrides.js',
   'cli/errors.js',
   'cli/exit-contract.js',
