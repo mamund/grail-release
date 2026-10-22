@@ -19,6 +19,8 @@ const suites = [
   'api/run-grail-world.js',
   'api/pursuit-stack.js',
   'api/independent-pursuits.js',
+  'api/node-context.js',
+  'api/http-context.js',
   'api/result-output-isolation.js',
   'api/interactive-stdio.js',
   'api/capability-timing.js',
@@ -26,8 +28,7 @@ const suites = [
   'api/pursuit-duration.js',
   'api/stack-events.js',
   'api/selection-events.js',
-  'api/pursuit-trace.js',
-  'api/node-context.js' 
+  'api/pursuit-trace.js'
 ];
 const timeoutMs = 30000;
 for (const suite of suites) {

@@ -5,7 +5,7 @@ import { executeStdioBinding } from "./stdioBinding.js";
 export async function executeBinding(binding, inputs, baseDir = process.cwd(), context) {
   switch (binding.protocol) {
     case "http":
-      return executeHttp(binding, inputs);
+      return executeHttp(binding, inputs, context);
 
     case "node":
       return executeNode(binding, inputs, baseDir, context);
@@ -18,8 +18,8 @@ export async function executeBinding(binding, inputs, baseDir = process.cwd(), c
   }
 }
 
-async function executeHttp(binding, inputs) {
-  const interaction = await executeHttpBinding(binding, inputs);
+async function executeHttp(binding, inputs, context) {
+  const interaction = await executeHttpBinding(binding, inputs, context);
   const outputs = extractHttpOutputs(binding.outputs, interaction.response);
 
   return {
