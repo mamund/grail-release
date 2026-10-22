@@ -1,7 +1,7 @@
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-export async function executeNodeBinding(binding, inputs, baseDir = process.cwd()) {
+export async function executeNodeBinding(binding, inputs, baseDir = process.cwd(), context) {
   const modulePath = path.resolve(baseDir, binding.module);
   const moduleUrl = pathToFileURL(modulePath).href;
 
@@ -14,7 +14,7 @@ export async function executeNodeBinding(binding, inputs, baseDir = process.cwd(
     );
   }
 
-  const result = await fn(inputs);
+  const result = await fn(inputs, context);
 
   return {
     module: binding.module,

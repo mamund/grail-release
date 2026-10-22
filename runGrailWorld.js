@@ -15,7 +15,8 @@ export async function runGrailWorld({
   configDir = 'config',
   goal,
   inputs,
-  inputMode = 'override'
+  inputMode = 'override',
+  recover = false
 } = {}) {
   if (typeof worldRoot !== 'string' || !worldRoot.trim()) {
     throw new Error('runGrailWorld requires a non-empty worldRoot.');
@@ -46,7 +47,8 @@ export async function runGrailWorld({
     registry: structuredClone(environment.registry),
     worldstate: structuredClone(environment.worldstate),
     inputs: effectiveInputs,
-    baseDir: root
+    baseDir: root,
+    recover
   });
   return grail.pursue(goal ?? environment.goal);
 }

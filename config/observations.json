@@ -1,9 +1,11 @@
 [
   {
+    "phase": "forward",
+    "pursuitId": "f81a57c9-0a13-4c32-866f-18a4e16b8189",
     "invocation": {
-      "id": "inv-001",
+      "id": "725be791-c7ec-43ee-aaf1-c8ee28279673",
       "affordance": "greet",
-      "timestamp": "2026-10-18T21:21:34.427Z",
+      "timestamp": "2026-10-22T17:26:24.396Z",
       "command": "python3",
       "args": [
         "./capabilities/greet.py"
@@ -13,7 +15,7 @@
       }
     },
     "timing": {
-      "durationMs": 29.06725
+      "durationMs": 27.678146
     },
     "response": {
       "exitCode": 0,

@@ -4,6 +4,9 @@ import { ObservationStore } from './observationStore.js';
 import { Server } from './server.js';
 import { Client } from './client.js';
 import { performance } from 'node:perf_hooks';
+import { randomUUID } from 'node:crypto';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 /**
  * Public facade for the GRAIL runtime.
@@ -13,7 +16,7 @@ import { performance } from 'node:perf_hooks';
  * of the calling application.
  */
 export class Grail {
-  constructor({ registry, worldstate, inputs = {}, observationPath, baseDir = process.cwd() }) {
+  constructor({ registry, worldstate, inputs = {}, observationPath, baseDir = process.cwd(), recover = false }) {
     if (!registry) {
       throw new Error('Grail requires a registry.');
     }
@@ -22,6 +25,7 @@ export class Grail {
       throw new Error('Grail requires worldstate.');
     }
 
+    this.recover = recover === true;
     this.inputs = inputs;
     this.affordanceRegistry = loadAffordanceRegistry(registry);
     this.initialWorldstate = { ...worldstate };
@@ -42,12 +46,17 @@ export class Grail {
     this.client = new Client(this.server, this.inputs);
   }
 
-  async pursue(goal, { onProgress, pursuitTrace } = {}) {
+  async pursue(goal, { onProgress, pursuitTrace, recover = this.recover } = {}) {
     if (!goal) {
       throw new Error('Grail.pursue requires a goal.');
     }
 
     this.resetPursuit();
+    const pursuitId = randomUUID();
+    if (this.server) {
+      this.server.pursuitId = pursuitId;
+      this.server.recoveryEnabled = recover === true;
+    }
     const detachTrace = pursuitTrace?.attach(this.client, this.server);
     this.client.onProgress = onProgress;
     const startedAt = performance.now();
@@ -63,19 +72,143 @@ export class Grail {
         }
       };
     }
+    let attempted;
+    let forwardDurationMs;
+    let recoveryDurationMs;
+    let recoveryCounts;
+    let durationMs;
     try {
       await this.client.pursue(goal);
+      attempted = recover === true && this.client.unresolvable === true;
+      forwardDurationMs = performance.now() - startedAt;
+      const recoveryStartedAt = attempted ? performance.now() : null;
+      recoveryCounts = attempted
+        ? await recoverStack(this.server.recoveryStack, this.baseDir, this.observationStore, this.client.onProgress, pursuitId, pursuitTrace?.record)
+        : null;
+      recoveryDurationMs = attempted ? performance.now() - recoveryStartedAt : null;
+      durationMs = performance.now() - startedAt;
     } finally {
       detachTrace?.();
     }
-    const durationMs = performance.now() - startedAt;
 
     return {
+      pursuitId,
       goal,
       reached: this.worldState.isPreconditionMet(goal),
-      timing: { durationMs },
+      timing: { durationMs, ...(attempted ? { forwardDurationMs, recoveryDurationMs, totalDurationMs: durationMs } : {}) },
       worldstate: { ...this.worldState.state },
-      observations: [...this.observationStore.observations]
+      observations: [...this.observationStore.observations],
+      ...(recover === true ? { recovery: { enabled: true, attempted, ...(attempted ? { ...recoveryCounts, durationMs: recoveryDurationMs } : {}) } } : {})
     };
   }
+}
+
+// Recovery handlers receive only the identity of the original invocation.
+async function recoverNode(entry, baseDir) {
+  const { binding, pursuitId, invocationId } = entry;
+  const declaration = binding.recover;
+  if (!declaration) return { status: 'SKIPPED' };
+  if (binding.protocol === 'http') return recoverHttp(entry);
+  if (binding.protocol === 'stdio') return recoverStdio(entry, baseDir);
+  if (binding.protocol !== 'node') return { status: 'SKIPPED' };
+
+  try {
+    const moduleName = typeof declaration === 'string' ? binding.module : declaration.module;
+    const functionName = typeof declaration === 'string' ? declaration : declaration.function;
+    const moduleUrl = pathToFileURL(path.resolve(baseDir, moduleName)).href;
+    const fn = (await import(moduleUrl))[functionName];
+    if (typeof fn !== 'function') return { status: 'RECOVERY_FAILED', error: 'Recovery handler is not a function' };
+    const response = await fn({ pursuitId, invocationId });
+    return { status: response?.result === 'SUCCESS' ? 'RECOVERED' : 'RECOVERY_FAILED', response, outputs: response?.outputs };
+  } catch (error) {
+    return { status: 'RECOVERY_FAILED', error: String(error) };
+  }
+}
+
+// HTTP recovery uses the declared endpoint and original invocation identity only.
+async function recoverHttp({ binding, pursuitId, invocationId }) {
+  try {
+    const response = await fetch(binding.recover.url, {
+      method: binding.recover.method,
+      headers: {
+        'Grail-Pursuit-Id': pursuitId,
+        'Grail-Invocation-Id': invocationId
+      }
+    });
+    if (!response.ok) return { status: 'RECOVERY_FAILED', response: { status: response.status } };
+    const body = await response.json();
+    return { status: body?.result === 'SUCCESS' ? 'RECOVERED' : 'RECOVERY_FAILED', response: { status: response.status, body }, outputs: body?.outputs };
+  } catch (error) {
+    return { status: 'RECOVERY_FAILED', error: String(error) };
+  }
+}
+
+// STDIO recovery uses a separate noninteractive process with only the original IDs on stdin.
+async function recoverStdio({ binding, pursuitId, invocationId }, baseDir) {
+  try {
+    const { executeStdioBinding } = await import('./bindings/stdioBinding.js');
+    const interaction = await executeStdioBinding(
+      { ...binding.recover, interactive: false },
+      { pursuitId, invocationId },
+      baseDir,
+      { pursuitId, invocationId }
+    );
+    return {
+      status: interaction.exitCode === 0 && !interaction.error && interaction.stdout?.result === 'SUCCESS' ? 'RECOVERED' : 'RECOVERY_FAILED',
+      response: { exitCode: interaction.exitCode, stdout: interaction.stdout, stderr: interaction.stderr },
+      outputs: interaction.stdout?.outputs,
+      ...(interaction.error ? { error: interaction.error } : {})
+    };
+  } catch (error) {
+    return { status: 'RECOVERY_FAILED', error: String(error) };
+  }
+}
+
+// Progress is observational: a callback failure must never interrupt compensation.
+function notifyRecoveryProgress(onProgress, event) {
+  try {
+    onProgress?.(event);
+  } catch {
+    // Observer errors do not affect recovery counts or capability observations.
+  }
+}
+
+async function recoverStack(stack, baseDir, observationStore, onProgress, pursuitId, recordTrace) {
+  const notify = event => {
+    try { recordTrace?.(event); } catch { /* Tracing is diagnostic. */ }
+    notifyRecoveryProgress(onProgress, event);
+  };
+  const counts = { recovered: 0, failed: 0, skipped: 0 };
+  notify({ type: 'recovery.started', pursuitId, total: stack.length });
+  for (let i = stack.length - 1; i >= 0; i--) {
+    const entry = stack[i];
+    const recoveryInvocationId = entry.binding.recover ? randomUUID() : undefined;
+    if (recoveryInvocationId) notify({ type: 'recovery.invocation.started', pursuitId, invocationId: recoveryInvocationId, originalInvocationId: entry.invocationId, affordance: entry.affordance });
+    const startedAt = new Date().toISOString();
+    const start = performance.now();
+    const outcome = await recoverNode(entry, baseDir);
+    const durationMs = performance.now() - start;
+    if (outcome.status === 'RECOVERED') counts.recovered++;
+    else if (outcome.status === 'RECOVERY_FAILED') counts.failed++;
+    else counts.skipped++;
+
+    notify({ type: 'recovery.invocation.completed', pursuitId, ...(recoveryInvocationId ? { invocationId: recoveryInvocationId } : {}), originalInvocationId: entry.invocationId, affordance: entry.affordance, status: outcome.status, durationMs });
+    observationStore.append({
+      phase: 'recovery',
+      pursuitId: entry.pursuitId,
+      originalInvocationId: entry.invocationId,
+      invocation: {
+        ...(recoveryInvocationId ? { id: recoveryInvocationId } : {}),
+        affordance: entry.affordance,
+        timestamp: startedAt
+      },
+      timing: { durationMs },
+      ...(outcome.response !== undefined ? { response: outcome.response } : {}),
+      ...(outcome.outputs !== undefined ? { outputs: outcome.outputs } : {}),
+      ...(outcome.error !== undefined ? { error: outcome.error } : {}),
+      result: outcome.status
+    });
+  }
+  notify({ type: 'recovery.completed', pursuitId, ...counts });
+  return counts;
 }

@@ -9,6 +9,8 @@ export class Server {
     this.baseDir = baseDir;
     this.onProgress = null;
     this.goal = null;
+    this.recoveryEnabled = false;
+    this.recoveryStack = [];
     this.onSelectionEvent = null; // Optional diagnostic callback, separate from progress.
   }
 
@@ -64,13 +66,15 @@ export class Server {
       affordance.binding.enabled !== false
     ) {
       // Measure only the actual binding invocation, not precondition resolution.
+      const invocationId = this.observationStore.nextInvocationId();
       const startedAt = new Date().toISOString();
       const startNs = process.hrtime.bigint();
       this.onProgress?.({ type: "capability.started", goal: this.goal, affordance: affordance.action });
       const interaction = await executeBinding(
         affordance.binding,
         resolvedInputs,
-        this.baseDir
+        this.baseDir,
+        { pursuitId: this.pursuitId, invocationId }
       );
       const durationMs = Number(process.hrtime.bigint() - startNs) / 1e6;
 
@@ -78,8 +82,10 @@ export class Server {
 
       const result = interaction.ok ? "SUCCESS" : "FAIL";
       this.observationStore.append({
+        phase: 'forward',
+        pursuitId: this.pursuitId,
         invocation: {
-          id: this.observationStore.nextInvocationId(),
+          id: invocationId,
           affordance: affordance.action,
           timestamp: startedAt,
           ...interaction.invocation
@@ -99,6 +105,17 @@ export class Server {
           result: "FAIL",
           offeredAffordances: []
         };
+      }
+
+      // Record successful forward invocations for possible LIFO compensation.
+      // No handler is invoked here; entries remain internal to this pursuit.
+      if (this.recoveryEnabled) {
+        this.recoveryStack.push({
+          pursuitId: this.pursuitId,
+          invocationId,
+          affordance: affordance.action,
+          binding: affordance.binding
+        });
       }
 
       console.log(`[SERVER] Binding succeeded: ${interaction.summary}`);

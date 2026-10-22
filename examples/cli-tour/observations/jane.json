@@ -1,0 +1,37 @@
+{
+  "goal": "greetingCreated",
+  "reached": true,
+  "timing": {
+    "durationMs": 5.533673999999991
+  },
+  "worldstate": {
+    "greetingCreated": true,
+    "farewellCreated": false
+  },
+  "observations": [
+    {
+      "invocation": {
+        "id": "inv-001",
+        "affordance": "createGreeting",
+        "timestamp": "2026-10-21T15:10:37.625Z",
+        "module": "./capabilities/hello.js",
+        "function": "createGreeting",
+        "inputs": {
+          "name": "Jane"
+        }
+      },
+      "timing": {
+        "durationMs": 1.198927
+      },
+      "response": {
+        "result": {
+          "message": "Hello, Jane!"
+        }
+      },
+      "outputs": {
+        "message": "Hello, Jane!"
+      },
+      "result": "SUCCESS"
+    }
+  ]
+}

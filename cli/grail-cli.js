@@ -48,7 +48,8 @@ Options:
   --inputs <json>        Override inputs with a JSON object (run only)
   --inputs-file <file>   Override inputs from a JSON file (run only)
   --output <mode>        Result format: summary or json (run only)
-  --trace <file>         Save pursuit selection/stack events as JSON (run only)
+  --trace <file>         Save pursuit selection/stack and recovery events as JSON (run only)
+  --recover              Enable pursuit recovery (run only)
   --progress             Send pursuit progress to stderr (run only)
   --no-progress          Suppress live progress messages (run only)
   --help, -h             Show help
@@ -65,7 +66,8 @@ Examples:
   grail run --output summary
   grail run --output json
   grail run --output json --progress
-  grail run --trace pursuit-trace.json`);
+  grail run --trace pursuit-trace.json
+  grail run --recover --output json`);
 }
 
 function showCommandHelp(command) {
@@ -87,7 +89,7 @@ Example:
     console.log(`GRAIL run
 
 Usage:
-  grail run [--config <directory>] [--goal <effect>] [--inputs <json> | --inputs-file <file>] [--output summary|json] [--trace <file>] [--progress | --no-progress]
+  grail run [--config <directory>] [--goal <effect>] [--inputs <json> | --inputs-file <file>] [--output summary|json] [--trace <file>] [--recover] [--progress | --no-progress]
 
 Runs the goal declared by the GRAIL environment, with optional invocation-specific goal and input overrides.
 
@@ -97,7 +99,8 @@ Options:
   --inputs <json>        Replace inputs.json for this run with an inline JSON object
   --inputs-file <file>   Replace inputs.json for this run with a JSON file
   --output <mode>        Print a summary or complete JSON result (default: existing trace)
-  --trace <file>         Save ordered pursuit selection and stack events as JSON
+  --trace <file>         Save ordered pursuit selection, stack, and recovery events as JSON
+  --recover              Enable pursuit recovery
   --progress             Send pursuit progress to stderr
   --no-progress          Suppress progress and runtime trace
   --help, -h             Show help`);
@@ -178,6 +181,7 @@ function parseRunOptions(args) {
   let output;
   let progress;
   let traceFile;
+  let recover = false;
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
@@ -274,6 +278,12 @@ function parseRunOptions(args) {
       continue;
     }
 
+    if (arg === '--recover') {
+      if (recover) throw new Error('--recover cannot be repeated.');
+      recover = true;
+      continue;
+    }
+
     if (arg === '--trace' || arg.startsWith('--trace=')) {
       const value = arg === '--trace' ? args[++i] : arg.slice('--trace='.length);
       if (!value || value.startsWith('-')) throw new Error('--trace requires a file path.');
@@ -313,7 +323,7 @@ function parseRunOptions(args) {
     throw error;
   }
 
-  return { configDir: path.resolve(configDir), goal, inputs, inputsFile, output, progress, traceFile };
+  return { configDir: path.resolve(configDir), goal, inputs, inputsFile, output, progress, traceFile, recover };
 }
 
 function parseInputsJson(value, source) {
@@ -424,6 +434,18 @@ function formatSummary(result) {
     `Duration: ${formatDuration(result.timing?.durationMs)}`,
     `Capability invocations: ${result.observations.length}`
   ];
+  if (result.recovery?.attempted === true) {
+    const { recovered, failed, skipped, durationMs } = result.recovery;
+    lines.push(
+      '',
+      'Recovery:',
+      '  Attempted: yes',
+      `  Recovered: ${recovered}`,
+      `  Failed:    ${failed}`,
+      `  Skipped:   ${skipped}`,
+      `  Duration:  ${durationMs.toFixed(2)} ms`
+    );
+  }
   for (const observation of result.observations) {
     lines.push('', `${observation.invocation?.affordance ?? 'Unknown affordance'}: ${observation.result}`);
     for (const [key, value] of Object.entries(observation.outputs ?? {})) {
@@ -447,7 +469,8 @@ async function runCommand(args) {
     inputsFile,
     output,
     progress,
-    traceFile
+    traceFile,
+    recover
   } = parseRunOptions(args);
   const environment = loadEnvironment(configDir);
   const goal = goalOverride ?? environment.goal;
@@ -462,7 +485,8 @@ async function runCommand(args) {
     worldstate: environment.worldstate,
     inputs,
     baseDir: environment.baseDir,
-    observationPath: path.join(configDir, 'observations.json')
+    observationPath: path.join(configDir, 'observations.json'),
+    recover
   });
 
   const pursuitTrace = traceFile

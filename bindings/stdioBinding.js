@@ -17,7 +17,7 @@ function normalizeInteractiveStderr(value) {
     .replace(/\r\n?/g, "\n");
 }
 
-export async function executeStdioBinding(binding, inputs, baseDir = process.cwd()) {
+export async function executeStdioBinding(binding, inputs, baseDir = process.cwd(), context) {
   const interactive = binding.interactive === true;
   const args = binding.args || [];
   let tempDir;
@@ -36,6 +36,10 @@ export async function executeStdioBinding(binding, inputs, baseDir = process.cwd
 
   try {
     const env = { ...process.env };
+    if (context) {
+      if (context.pursuitId !== undefined) env.GRAIL_PURSUIT_ID = context.pursuitId;
+      if (context.invocationId !== undefined) env.GRAIL_INVOCATION_ID = context.invocationId;
+    }
     if (interactive) {
       tempDir = await mkdtemp(join(tmpdir(), "grail-stdio-"));
       const inputPath = join(tempDir, "inputs.json");

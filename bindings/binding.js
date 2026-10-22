@@ -2,24 +2,24 @@ import { executeHttpBinding } from "./httpBinding.js";
 import { executeNodeBinding } from "./nodeBinding.js";
 import { executeStdioBinding } from "./stdioBinding.js";
 
-export async function executeBinding(binding, inputs, baseDir = process.cwd()) {
+export async function executeBinding(binding, inputs, baseDir = process.cwd(), context) {
   switch (binding.protocol) {
     case "http":
-      return executeHttp(binding, inputs);
+      return executeHttp(binding, inputs, context);
 
     case "node":
-      return executeNode(binding, inputs, baseDir);
+      return executeNode(binding, inputs, baseDir, context);
 
     case "stdio":
-      return executeStdio(binding, inputs, baseDir);
+      return executeStdio(binding, inputs, baseDir, context);
 
     default:
       throw new Error(`Unsupported binding protocol: ${binding.protocol}`);
   }
 }
 
-async function executeHttp(binding, inputs) {
-  const interaction = await executeHttpBinding(binding, inputs);
+async function executeHttp(binding, inputs, context) {
+  const interaction = await executeHttpBinding(binding, inputs, context);
   const outputs = extractHttpOutputs(binding.outputs, interaction.response);
 
   return {
@@ -40,9 +40,9 @@ async function executeHttp(binding, inputs) {
   };
 }
 
-async function executeNode(binding, inputs, baseDir) {
+async function executeNode(binding, inputs, baseDir, context) {
   try {
-    const interaction = await executeNodeBinding(binding, inputs, baseDir);
+    const interaction = await executeNodeBinding(binding, inputs, baseDir, context);
     const outputs = extractNodeOutputs(binding.outputs, interaction.result);
 
     return {
@@ -77,9 +77,9 @@ async function executeNode(binding, inputs, baseDir) {
   }
 }
 
-async function executeStdio(binding, inputs, baseDir) {
+async function executeStdio(binding, inputs, baseDir, context) {
   try {
-    const interaction = await executeStdioBinding(binding, inputs, baseDir);
+    const interaction = await executeStdioBinding(binding, inputs, baseDir, context);
 
     const ok =
       interaction.exitCode === 0 &&

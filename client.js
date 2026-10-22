@@ -30,6 +30,7 @@ export class Client {
   async pursue(goal) {
     // Each pursuit has its own traversal stack. Worldstate and observations persist.
     this.stack = [];
+    this.unresolvable = false;
     this.server.onProgress = this.onProgress;
     this.server.goal = goal;
     console.log(`\n[CLIENT] Starting pursuit: ${goal}`);
@@ -62,6 +63,7 @@ export class Client {
         console.log(
           `[CLIENT] Cannot proceed: goal is unresolvable - ${goal}`
         );
+        this.unresolvable = true;
         this.reportProgress({ type: "pursuit.unresolvable", goal });
         break;
       }
@@ -99,6 +101,7 @@ export class Client {
         console.log(
           `[CLIENT] Cannot proceed: condition is unresolvable - ${response.condition}`
         );
+        this.unresolvable = true;
         this.reportProgress({ type: "condition.unresolvable", goal, condition: response.condition });
         break;
 

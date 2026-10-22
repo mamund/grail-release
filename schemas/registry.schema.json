@@ -184,6 +184,30 @@
                     }
                   ]
                 }
+              },
+              "recover": {
+                "type": "object",
+                "required": [
+                  "method",
+                  "url"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "GET",
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE"
+                    ]
+                  },
+                  "url": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
               }
             }
           },
@@ -229,6 +253,32 @@
                     }
                   }
                 }
+              },
+              "recover": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "module",
+                      "function"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "module": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "function": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                ]
               }
             }
           },
@@ -276,6 +326,25 @@
                     "path": {
                       "type": "string",
                       "minLength": 1
+                    }
+                  }
+                }
+              },
+              "recover": {
+                "type": "object",
+                "required": [
+                  "command"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "command": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "args": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
                     }
                   }
                 }

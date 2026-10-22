@@ -4,17 +4,18 @@ export function createPursuitTrace() {
   const events = [];
   let sequence = 0;
 
+  function record(event) {
+    try {
+      events.push({ ...event, sequence: ++sequence });
+    } catch {
+      // Tracing is diagnostic and must never interrupt execution.
+    }
+  }
+
   function attach(client, server = client.server) {
     if (!client || !server) throw new TypeError('Client and server are required');
     const previousStack = client.onStackEvent;
     const previousSelection = server.onSelectionEvent;
-    const record = (event) => {
-      try {
-        events.push({ ...event, sequence: ++sequence });
-      } catch {
-        // Tracing is diagnostic and must never interrupt execution.
-      }
-    };
     const forward = (callback, event) => {
       if (typeof callback === 'function') {
         try { callback(event); } catch { /* Diagnostic callbacks are isolated. */ }
@@ -33,5 +34,5 @@ export function createPursuitTrace() {
     };
   }
 
-  return { events, attach };
+  return { events, attach, record };
 }

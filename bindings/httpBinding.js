@@ -3,7 +3,7 @@
 // Maps resolved GRAIL inputs to HTTP path, query, header, and body locations.
 // Returns captured request/response facts to the GRAIL runtime.
 
-export async function executeHttpBinding(binding, inputs) {
+export async function executeHttpBinding(binding, inputs, context) {
   const parameters = binding.parameters;
 
   if (!parameters) {
@@ -11,7 +11,7 @@ export async function executeHttpBinding(binding, inputs) {
       url: binding.url,
       headers: {},
       body: { ...inputs }
-    });
+    }, context);
   }
 
   let url = binding.url;
@@ -69,7 +69,7 @@ export async function executeHttpBinding(binding, inputs) {
     url,
     headers,
     body
-  });
+  }, context);
 }
 
 function appendQueryValue(query, name, value) {
@@ -83,9 +83,15 @@ function appendQueryValue(query, name, value) {
   query.append(name, String(value));
 }
 
-async function executeRequest(binding, request) {
+async function executeRequest(binding, request, context) {
   const contentType = binding.contentType || "application/json";
   const headers = { ...request.headers };
+  if (context?.pursuitId !== undefined) {
+    headers["Grail-Pursuit-Id"] = context.pursuitId;
+  }
+  if (context?.invocationId !== undefined) {
+    headers["Grail-Invocation-Id"] = context.invocationId;
+  }
   const hasBody = Object.keys(request.body).length > 0;
   let requestBody;
 
