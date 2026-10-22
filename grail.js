@@ -5,6 +5,8 @@ import { Server } from './server.js';
 import { Client } from './client.js';
 import { performance } from 'node:perf_hooks';
 import { randomUUID } from 'node:crypto';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 /**
  * Public facade for the GRAIL runtime.
@@ -75,6 +77,10 @@ export class Grail {
     } finally {
       detachTrace?.();
     }
+    const attempted = recover === true && this.client.unresolvable === true;
+    const recoveryCounts = attempted
+      ? await recoverNodeStack(this.server.recoveryStack, this.baseDir)
+      : null;
     const durationMs = performance.now() - startedAt;
 
     return {
@@ -84,7 +90,38 @@ export class Grail {
       timing: { durationMs },
       worldstate: { ...this.worldState.state },
       observations: [...this.observationStore.observations],
-      ...(recover === true ? { recovery: { enabled: true, attempted: this.client.unresolvable === true } } : {})
+      ...(recover === true ? { recovery: { enabled: true, attempted, ...(attempted ? recoveryCounts : {}) } } : {})
     };
   }
+}
+
+// Recovery handlers receive only the identity of the original invocation.
+async function recoverNode(entry, baseDir) {
+  const { binding, pursuitId, invocationId } = entry;
+  const declaration = binding.recover;
+  if (!declaration) return 'SKIPPED';
+  if (binding.protocol !== 'node') return 'SKIPPED'; // Other protocols are not implemented yet.
+
+  try {
+    const moduleName = typeof declaration === 'string' ? binding.module : declaration.module;
+    const functionName = typeof declaration === 'string' ? declaration : declaration.function;
+    const moduleUrl = pathToFileURL(path.resolve(baseDir, moduleName)).href;
+    const fn = (await import(moduleUrl))[functionName];
+    if (typeof fn !== 'function') return 'RECOVERY_FAILED';
+    const response = await fn({ pursuitId, invocationId });
+    return response?.result === 'SUCCESS' ? 'RECOVERED' : 'RECOVERY_FAILED';
+  } catch {
+    return 'RECOVERY_FAILED';
+  }
+}
+
+async function recoverNodeStack(stack, baseDir) {
+  const counts = { recovered: 0, failed: 0, skipped: 0 };
+  for (let i = stack.length - 1; i >= 0; i--) {
+    const status = await recoverNode(stack[i], baseDir);
+    if (status === 'RECOVERED') counts.recovered++;
+    else if (status === 'RECOVERY_FAILED') counts.failed++;
+    else counts.skipped++;
+  }
+  return counts;
 }

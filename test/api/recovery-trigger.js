@@ -22,7 +22,7 @@ export async function fail() { throw new Error('expected failure'); }
 
   const exhausted = await make({ fail }).pursue('done', { recover: true });
   assert.equal(exhausted.reached, false);
-  assert.deepEqual(exhausted.recovery, { enabled: true, attempted: true });
+  assert.deepEqual(exhausted.recovery, { enabled: true, attempted: true, recovered: 0, failed: 0, skipped: 0 });
   assert.equal(exhausted.observations.length, 1, 'Trigger does not execute handlers');
 
   const disabled = await make({ fail }).pursue('done');
