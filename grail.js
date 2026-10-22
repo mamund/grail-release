@@ -150,7 +150,8 @@ async function recoverStdio({ binding, pursuitId, invocationId }, baseDir) {
     const interaction = await executeStdioBinding(
       { ...binding.recover, interactive: false },
       { pursuitId, invocationId },
-      baseDir
+      baseDir,
+      { pursuitId, invocationId }
     );
     return {
       status: interaction.exitCode === 0 && !interaction.error && interaction.stdout?.result === 'SUCCESS' ? 'RECOVERED' : 'RECOVERY_FAILED',
