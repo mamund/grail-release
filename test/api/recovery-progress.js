@@ -49,6 +49,36 @@ export async function badCompensation() { return { result: 'FAIL' }; }
   assert.ok(result.recovery.durationMs >= 0);
   assert.deepEqual((({ durationMs, ...counts }) => counts)(result.recovery), { enabled: true, attempted: true, recovered: 1, failed: 1, skipped: 1 });
 
+  // An observer that throws at every recovery event cannot interrupt LIFO compensation.
+  // Test each lifecycle event independently, including the final notification.
+  const eventTypes = [
+    'recovery.started',
+    'recovery.invocation.started',
+    'recovery.invocation.completed',
+    'recovery.completed'
+  ];
+  for (const throwAt of eventTypes) {
+    const observed = [];
+    const isolated = await grail.pursue('done', {
+      recover: true,
+      onProgress(event) {
+        if (!event.type.startsWith('recovery.')) return;
+        observed.push(event.type);
+        if (event.type === throwAt) throw new Error(`Observer failed at ${throwAt}`);
+      }
+    });
+    assert.equal(isolated.reached, false);
+    assert.deepEqual(observed, recoveryEvents.map(e => e.type));
+    assert.deepEqual(
+      (({ durationMs, ...counts }) => counts)(isolated.recovery),
+      { enabled: true, attempted: true, recovered: 1, failed: 1, skipped: 1 }
+    );
+    const records = isolated.observations.filter(o => o.phase === 'recovery');
+    assert.deepEqual(records.map(o => o.result), ['RECOVERY_FAILED', 'SKIPPED', 'RECOVERED']);
+    assert.deepEqual(records.map(o => o.invocation.affordance), ['c', 'b', 'a']);
+    assert.equal(records.every(o => !Object.hasOwn(o, 'error') || !String(o.error).includes('Observer failed')), true);
+  }
+
   for (const options of [{ recover: false }, { recover: true }]) {
     const success = new Grail({ registry: { a: registry.a }, worldstate: {}, baseDir: root });
     const progress = [];

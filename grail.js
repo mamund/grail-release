@@ -158,13 +158,22 @@ async function recoverStdio({ binding, pursuitId, invocationId }, baseDir) {
   }
 }
 
+// Progress is observational: a callback failure must never interrupt compensation.
+function notifyRecoveryProgress(onProgress, event) {
+  try {
+    onProgress?.(event);
+  } catch {
+    // Observer errors do not affect recovery counts or capability observations.
+  }
+}
+
 async function recoverStack(stack, baseDir, observationStore, onProgress, pursuitId) {
   const counts = { recovered: 0, failed: 0, skipped: 0 };
-  onProgress?.({ type: 'recovery.started', pursuitId, total: stack.length });
+  notifyRecoveryProgress(onProgress, { type: 'recovery.started', pursuitId, total: stack.length });
   for (let i = stack.length - 1; i >= 0; i--) {
     const entry = stack[i];
     const recoveryInvocationId = entry.binding.recover ? randomUUID() : undefined;
-    if (recoveryInvocationId) onProgress?.({ type: 'recovery.invocation.started', pursuitId, invocationId: recoveryInvocationId, originalInvocationId: entry.invocationId, affordance: entry.affordance });
+    if (recoveryInvocationId) notifyRecoveryProgress(onProgress, { type: 'recovery.invocation.started', pursuitId, invocationId: recoveryInvocationId, originalInvocationId: entry.invocationId, affordance: entry.affordance });
     const startedAt = new Date().toISOString();
     const start = performance.now();
     const outcome = await recoverNode(entry, baseDir);
@@ -173,7 +182,7 @@ async function recoverStack(stack, baseDir, observationStore, onProgress, pursui
     else if (outcome.status === 'RECOVERY_FAILED') counts.failed++;
     else counts.skipped++;
 
-    onProgress?.({ type: 'recovery.invocation.completed', pursuitId, ...(recoveryInvocationId ? { invocationId: recoveryInvocationId } : {}), originalInvocationId: entry.invocationId, affordance: entry.affordance, status: outcome.status, durationMs });
+    notifyRecoveryProgress(onProgress, { type: 'recovery.invocation.completed', pursuitId, ...(recoveryInvocationId ? { invocationId: recoveryInvocationId } : {}), originalInvocationId: entry.invocationId, affordance: entry.affordance, status: outcome.status, durationMs });
     observationStore.append({
       phase: 'recovery',
       pursuitId: entry.pursuitId,
@@ -190,6 +199,6 @@ async function recoverStack(stack, baseDir, observationStore, onProgress, pursui
       result: outcome.status
     });
   }
-  onProgress?.({ type: 'recovery.completed', pursuitId, ...counts });
+  notifyRecoveryProgress(onProgress, { type: 'recovery.completed', pursuitId, ...counts });
   return counts;
 }
