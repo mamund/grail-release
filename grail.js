@@ -79,7 +79,7 @@ export class Grail {
     }
     const attempted = recover === true && this.client.unresolvable === true;
     const recoveryCounts = attempted
-      ? await recoverStack(this.server.recoveryStack, this.baseDir)
+      ? await recoverStack(this.server.recoveryStack, this.baseDir, this.observationStore)
       : null;
     const durationMs = performance.now() - startedAt;
 
@@ -99,21 +99,21 @@ export class Grail {
 async function recoverNode(entry, baseDir) {
   const { binding, pursuitId, invocationId } = entry;
   const declaration = binding.recover;
-  if (!declaration) return 'SKIPPED';
+  if (!declaration) return { status: 'SKIPPED' };
   if (binding.protocol === 'http') return recoverHttp(entry);
   if (binding.protocol === 'stdio') return recoverStdio(entry, baseDir);
-  if (binding.protocol !== 'node') return 'SKIPPED';
+  if (binding.protocol !== 'node') return { status: 'SKIPPED' };
 
   try {
     const moduleName = typeof declaration === 'string' ? binding.module : declaration.module;
     const functionName = typeof declaration === 'string' ? declaration : declaration.function;
     const moduleUrl = pathToFileURL(path.resolve(baseDir, moduleName)).href;
     const fn = (await import(moduleUrl))[functionName];
-    if (typeof fn !== 'function') return 'RECOVERY_FAILED';
+    if (typeof fn !== 'function') return { status: 'RECOVERY_FAILED', error: 'Recovery handler is not a function' };
     const response = await fn({ pursuitId, invocationId });
-    return response?.result === 'SUCCESS' ? 'RECOVERED' : 'RECOVERY_FAILED';
-  } catch {
-    return 'RECOVERY_FAILED';
+    return { status: response?.result === 'SUCCESS' ? 'RECOVERED' : 'RECOVERY_FAILED', response, outputs: response?.outputs };
+  } catch (error) {
+    return { status: 'RECOVERY_FAILED', error: String(error) };
   }
 }
 
@@ -127,11 +127,11 @@ async function recoverHttp({ binding, pursuitId, invocationId }) {
         'Grail-Invocation-Id': invocationId
       }
     });
-    if (!response.ok) return 'RECOVERY_FAILED';
+    if (!response.ok) return { status: 'RECOVERY_FAILED', response: { status: response.status } };
     const body = await response.json();
-    return body?.result === 'SUCCESS' ? 'RECOVERED' : 'RECOVERY_FAILED';
-  } catch {
-    return 'RECOVERY_FAILED';
+    return { status: body?.result === 'SUCCESS' ? 'RECOVERED' : 'RECOVERY_FAILED', response: { status: response.status, body }, outputs: body?.outputs };
+  } catch (error) {
+    return { status: 'RECOVERY_FAILED', error: String(error) };
   }
 }
 
@@ -144,20 +144,44 @@ async function recoverStdio({ binding, pursuitId, invocationId }, baseDir) {
       { pursuitId, invocationId },
       baseDir
     );
-    if (interaction.exitCode !== 0 || interaction.error) return 'RECOVERY_FAILED';
-    return interaction.stdout?.result === 'SUCCESS' ? 'RECOVERED' : 'RECOVERY_FAILED';
-  } catch {
-    return 'RECOVERY_FAILED';
+    return {
+      status: interaction.exitCode === 0 && !interaction.error && interaction.stdout?.result === 'SUCCESS' ? 'RECOVERED' : 'RECOVERY_FAILED',
+      response: { exitCode: interaction.exitCode, stdout: interaction.stdout, stderr: interaction.stderr },
+      outputs: interaction.stdout?.outputs,
+      ...(interaction.error ? { error: interaction.error } : {})
+    };
+  } catch (error) {
+    return { status: 'RECOVERY_FAILED', error: String(error) };
   }
 }
 
-async function recoverStack(stack, baseDir) {
+async function recoverStack(stack, baseDir, observationStore) {
   const counts = { recovered: 0, failed: 0, skipped: 0 };
   for (let i = stack.length - 1; i >= 0; i--) {
-    const status = await recoverNode(stack[i], baseDir);
-    if (status === 'RECOVERED') counts.recovered++;
-    else if (status === 'RECOVERY_FAILED') counts.failed++;
+    const entry = stack[i];
+    const startedAt = new Date().toISOString();
+    const start = performance.now();
+    const outcome = await recoverNode(entry, baseDir);
+    const durationMs = performance.now() - start;
+    if (outcome.status === 'RECOVERED') counts.recovered++;
+    else if (outcome.status === 'RECOVERY_FAILED') counts.failed++;
     else counts.skipped++;
+
+    observationStore.append({
+      phase: 'recovery',
+      pursuitId: entry.pursuitId,
+      originalInvocationId: entry.invocationId,
+      invocation: {
+        ...(outcome.status !== 'SKIPPED' ? { id: randomUUID() } : {}),
+        affordance: entry.affordance,
+        timestamp: startedAt
+      },
+      timing: { durationMs },
+      ...(outcome.response !== undefined ? { response: outcome.response } : {}),
+      ...(outcome.outputs !== undefined ? { outputs: outcome.outputs } : {}),
+      ...(outcome.error !== undefined ? { error: outcome.error } : {}),
+      result: outcome.status
+    });
   }
   return counts;
 }

@@ -45,7 +45,7 @@ else process.stdout.write(JSON.stringify({ result: 'SUCCESS' }));
   assert.deepEqual(calls.map(c => c.mode), ['exit', 'invalid', 'fail', 'success']);
   assert.ok(calls.every(c => c.pursuitId === result.pursuitId));
   assert.deepEqual(calls.map(c => c.invocationId), result.observations.slice(0, 4).reverse().map(o => o.invocation.id));
-  assert.equal(result.observations.length, 5, 'Recovery observations deferred');
+  assert.equal(result.observations.filter(o => o.phase === 'recovery').length, 4);
   const disabled = await grail.pursue('e');
   assert.equal(Object.hasOwn(disabled, 'recovery'), false);
   assert.equal((await readFile(path.join(root, 'calls.txt'), 'utf8')).trim().split('\n').length, 4);

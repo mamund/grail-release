@@ -36,7 +36,7 @@ export async function explode() { throw new Error('recovery error'); }
   const calls = (await readFile(path.join(root, 'calls.txt'), 'utf8')).trim().split('\n').map(JSON.parse);
   assert.deepEqual(calls.map(c => c.invocationId), [result.observations[1].invocation.id, result.observations[0].invocation.id]);
   assert.ok(calls.every(c => c.pursuitId === result.pursuitId));
-  assert.equal(result.observations.length, 7, 'No recovery observations in this increment');
+  assert.equal(result.observations.filter(o => o.phase === 'recovery').length, 6);
   const disabled = await grail.pursue('done');
   assert.equal(Object.hasOwn(disabled, 'recovery'), false);
   assert.equal((await readFile(path.join(root, 'calls.txt'), 'utf8')).trim().split('\n').length, 2);

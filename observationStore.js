@@ -19,7 +19,7 @@ export class ObservationStore {
 
   getByAffordance(affordance) {
     return this.observations.filter(
-      observation => observation.invocation.affordance === affordance
+      observation => observation.phase !== "recovery" && observation.invocation.affordance === affordance
     );
   }
   
@@ -46,7 +46,7 @@ export class ObservationStore {
         const observation = this.observations[i];
 
         if (
-          observation.outputs &&
+          observation.phase !== "recovery" && observation.outputs &&
           Object.prototype.hasOwnProperty.call(
             observation.outputs,
             outputName
@@ -73,7 +73,7 @@ export class ObservationStore {
     }
 
     const matching = this.observations.filter(
-      observation => observation.invocation.affordance === affordance
+      observation => observation.phase !== "recovery" && observation.invocation.affordance === affordance
     );
 
     if (matching.length === 0) {

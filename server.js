@@ -82,6 +82,7 @@ export class Server {
 
       const result = interaction.ok ? "SUCCESS" : "FAIL";
       this.observationStore.append({
+        phase: 'forward',
         pursuitId: this.pursuitId,
         invocation: {
           id: invocationId,

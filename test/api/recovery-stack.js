@@ -37,7 +37,7 @@ export async function fail() { throw new Error('intentional failure'); }
   assert.equal(first.binding, grail.affordanceRegistry.first.binding);
   assert.equal(second.binding, grail.affordanceRegistry.second.binding);
   assert.equal(enabled.observations[2].result, 'FAIL');
-  assert.equal(enabled.observations.length, 3, 'No additional observations');
+  assert.equal(enabled.observations.filter(o => o.phase === 'forward').length, 3);
 
   const repeated = await grail.pursue('done', { recover: true });
   assert.equal(grail.server.recoveryStack.length, 2, 'Fresh stack per pursuit');
