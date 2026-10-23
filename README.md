@@ -17,11 +17,11 @@ The environment defines the possibilities. GRAIL pursues the goal without requir
 
 ## Status
 
-**GRAIL v0.2.0 is available as a public beta.** This release includes interactive stdio capabilities, structured progress reporting, capability and pursuit timing, and a programmatic API for embedding GRAIL in other applications. GRAIL remains in beta; interfaces and implementation details may evolve. Recovery v1 is implemented in the development source but is not part of the published v0.2.0 beta.
+**GRAIL v0.3.0-beta.1 is the current published beta.** This release adds Recovery v1 (optional compensation of completed side effects) and pursuit instrumentation, including selection and stack events and trace export. It builds on v0.2.0, which introduced interactive stdio capabilities, progress reporting, and execution timing. GRAIL remains in beta; interfaces and implementation details may evolve. The literal-input resolution fix is implemented in development source but is not included in v0.3.0-beta.1.
 
 ## Quick start
 
-Install the current beta (v0.2.0) and run it as follows:
+Install the current beta (v0.3.0-beta.1) and run it as follows:
 
 ```bash
 npm install -g @mamund/grail@beta
@@ -30,7 +30,7 @@ npm install -g @mamund/grail@beta
 To pin this specific release instead of following the beta tag:
 
 ```bash
-npm install -g @mamund/grail@0.2.0
+npm install -g @mamund/grail@0.3.0-beta.1
 ```
 
 During development, install the repository and expose the local CLI:
@@ -199,7 +199,7 @@ grail run --output json
 
 `summary` prints the goal, success or failure, capability invocation count, captured outputs, and total pursuit duration. `json` prints the complete pursuit result (`goal`, `reached`, `worldstate`, `observations`, and `timing`) as valid JSON suitable for tools such as `jq`. Routine runtime trace messages are suppressed in these modes; errors still appear on stderr. Omitting `--output` preserves the existing trace. The option accepts both `--output json` and `--output=json`. Invalid modes exit with code `2`.
 
-### Optional recovery (development branch)
+### Optional recovery (v0.3.0-beta.1)
 
 Use `--recover` to enable best-effort compensation when a pursuit becomes unresolvable after normal affordance alternatives have been exhausted:
 
@@ -209,7 +209,7 @@ grail run --recover --output=summary
 
 Recovery is disabled by default. When enabled, GRAIL records successful capability invocations and, if the pursuit becomes unresolvable, invokes declared recovery handlers in reverse completion order. A failed capability invocation does not itself trigger recovery. The summary reports recovered, failed, and skipped compensation attempts when recovery is attempted. The original goal result and CLI exit status are unchanged by compensation.
 
-Recovery v1 is available in the development source, **not** the published v0.2.0 beta. See [Capability Recovery Guide](./docs/capability-recovery-guide.md) for handler contracts and [Recovery v1 Specification](./docs/recovery-spec.md) for the design and limitations.
+Recovery v1 is included in the published v0.3.0-beta.1 release. See [Capability Recovery Guide](./docs/capability-recovery-guide.md) for handler contracts and [Recovery v1 Specification](./docs/recovery-spec.md) for the design and limitations.
 
 ### Progress reporting
 
@@ -222,7 +222,7 @@ grail run --output=json --progress > result.json
 
 Use `--no-progress` to suppress optional progress reporting. Progress and result formatting are independent: this is especially useful for long-running HTTP, local-process, or LLM-backed capabilities. A progress event indicates an execution milestone, not a guarantee of eventual goal completion.
 
-### Pursuit trace export (development branch)
+### Pursuit trace export (v0.3.0-beta.1)
 
 Use `--trace <file>` to save an ordered JSON record of the runtime's selection decisions and pursuit stack changes:
 
@@ -243,7 +243,7 @@ This **pursuit trace** records runtime decisions and stack activity. It differs 
 
 If the trace destination cannot be written, the CLI reports the file error and exits with code `1`, even if the pursuit itself reached its goal. Create the destination directory before running the command.
 
-The `--trace` option is available in the instrumented development branch; it is not part of the published v0.2.0 beta.
+The `--trace` option is included in the published v0.3.0-beta.1 release.
 
 Input overrides replace the contents of `inputs.json` for that invocation; they are not merged with it. `--inputs` and `--inputs-file` are mutually exclusive. Neither goal nor input overrides modify the environment files on disk.
 
@@ -330,7 +330,7 @@ console.log(result.reached);
 
 Only `worldRoot` is required. By default, configuration is loaded from `<worldRoot>/config`, the goal comes from `goal.json`, and omitted inputs come from `inputs.json`. Supplied inputs use shallow `override` merging (caller wins) unless `inputMode: 'replace'` is specified. The helper returns the normal pursuit result, including unsuccessful pursuits, without interpreting domain outcomes. See [Running a GRAIL world from Node.js](./docs/run-grail-world.md) for the full contract and portability notes.
 
-**Availability:** `runGrailWorld()` is present in the updated development source. It is not part of the published v0.2.0 beta; consumers must install a release that exports it or install the updated local package.
+**Availability:** `runGrailWorld()` is available in v0.3.0-beta.1.
 
 ### Lower-level API
 
@@ -376,7 +376,7 @@ Events include `pursuit.started`, `capability.started`, `capability.completed`, 
 For a complete working example, see [API Consumer](./examples/api-consumer/README.md). It demonstrates goal pursuit, structured progress events, execution timing, and unresolvable-goal handling using GRAIL as an installed npm dependency.
 
 
-### Recovery from the Node API (development branch)
+### Recovery from the Node API (v0.3.0-beta.1)
 
 Recovery can be enabled when constructing a runtime or for an individual pursuit:
 
@@ -394,7 +394,20 @@ const result = await grail.pursue(environment.goal);
 // const result = await grail.pursue(environment.goal, { recover: true });
 ```
 
-Recovery is off by default. With recovery enabled, the result includes a `recovery` object; when compensation is attempted it reports `recovered`, `failed`, `skipped`, and duration. Without recovery enabled, the property is omitted. The result's `reached` field continues to describe the original goal, not the compensation outcome. The portable `runGrailWorld()` helper also accepts a `recover` option in the development source.
+Recovery is off by default. With recovery enabled, the result includes a `recovery` object; when compensation is attempted it reports `recovered`, `failed`, `skipped`, and duration. Without recovery enabled, the property is omitted. The result's `reached` field continues to describe the original goal, not the compensation outcome. The portable `runGrailWorld()` helper also accepts a `recover` option.
+
+### Literal affordance inputs (unreleased)
+
+An upcoming release corrects input resolution so affordances can supply literal string values alongside references to configured inputs and prior capability outputs. For example:
+
+```json
+{
+  "value": "$inputs.supplierId",
+  "ruleId": "supplier"
+}
+```
+
+Here, `value` is resolved from `inputs.json`, while `ruleId` is passed directly as the literal string `supplier`. Previously, the literal was treated as an unresolved input and blocked execution. The fix preserves `$inputs.*` and `$outputs.*` resolution; unsupported `$`-prefixed references remain unresolved. The [`purchase-order-validation`](https://github.com/mamund/grail-worlds/tree/main/purchase-order-validation) world demonstrates this behavior. This fix is present in the updated development source but is **not included in 0.3.0-beta.1**.
 
 ## Bindings
 
@@ -406,7 +419,7 @@ An affordance may be connected to an executable capability through a binding. Th
 | `http` | Invoke a capability through HTTP. |
 | `stdio` | Launch a local process and consume JSON output from stdout; supports ordinary and interactive execution. |
 
-### Recovery handlers (development branch)
+### Recovery handlers (v0.3.0-beta.1)
 
 A binding may optionally declare a `recover` handler. Node handlers can name an exported function in the same module or specify a separate module and function; HTTP handlers specify a method and URL; stdio handlers specify a command and arguments. GRAIL validates declaration syntax without requiring the handler to be available until compensation is attempted.
 
@@ -467,6 +480,6 @@ Two documents in `docs/` provide additional architectural context:
 
 ## Beta scope
 
-The beta centers on a small runtime and CLI for composing and executing GRAIL worlds. Version 0.2.0 includes interactive stdio, structured progress reporting, and execution timing, alongside updated documentation and regression testing.
+The beta centers on a small runtime and CLI for composing and executing GRAIL worlds. Version 0.3.0-beta.1 adds Recovery v1 and pursuit instrumentation to the interactive stdio, progress reporting, and timing introduced in v0.2.0. Literal affordance input resolution improvements remain unreleased.
 
 More advanced selection strategies, additional tooling, richer authoring experiences, and other execution features can build on this foundation without changing the basic model of goal pursuit through conditions, affordances, effects, and bound capabilities.

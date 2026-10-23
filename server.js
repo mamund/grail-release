@@ -162,24 +162,27 @@ export class Server {
   resolveInput(source, inputs) {
     const inputPrefix = "$inputs.";
 
-    if (source.startsWith(inputPrefix)) {
+    if (typeof source === "string" && source.startsWith(inputPrefix)) {
       const inputName = source.slice(inputPrefix.length);
 
       if (!inputName || !(inputName in inputs)) {
         return { resolved: false };
       }
 
-      return {
-        resolved: true,
-        value: inputs[inputName]
-      };
+      return { resolved: true, value: inputs[inputName] };
     }
 
-    if (source.startsWith("$outputs.")) {
+    if (typeof source === "string" && source.startsWith("$outputs.")) {
       return this.observationStore.resolve(source);
     }
 
-    return { resolved: false };
+    // Preserve the failure behavior for unsupported reference expressions.
+    if (typeof source === "string" && source.startsWith("$")) {
+      return { resolved: false };
+    }
+
+    // Plain values are literals, including false, zero, and null.
+    return { resolved: true, value: source };
   }
 
   reportSelectionEvent(event) {

@@ -1,6 +1,20 @@
 # Changelog
 
-## Unreleased — Pursuit instrumentation
+## Unreleased — Input resolution
+
+- Fixed affordance input resolution to accept literal string values alongside `$inputs.*` and `$outputs.*` references.
+- Preserved unresolved-reference handling for missing inputs and unsupported `$`-prefixed references.
+- Added regression coverage for literal affordance inputs.
+
+## 0.3.0-beta.1 — Recovery v1 and pursuit instrumentation
+
+- Added opt-in recovery support for compensating previously completed side effects when a pursuit cannot reach its goal.
+- Added CLI `--recover` to enable recovery during a pursuit.
+- Added capability-defined recovery handlers, with runtime coordination of compensation in reverse completion order.
+- Added recovery reporting and observations so compensation attempts and outcomes can be inspected.
+- Added recovery regression coverage and a recovery demonstration world.
+
+### Pursuit instrumentation
 
 - Added optional diagnostic events for condition and affordance selection, including the candidates considered.
 - Added optional stack push/pop events with stack snapshots and completion results.
