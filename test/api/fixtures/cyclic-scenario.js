@@ -23,6 +23,16 @@ if (scenario === 'alternative') {
   registry.seedC = producer('seedC', [], 'conditionC');
   worldstate.conditionC = false;
   Math.random = () => 0;
+} else if (scenario === 'nested-backtracking') {
+  // A -> B -> C -> D -> B forms a cycle. The alternative for A
+  // is available only after unwinding to the root decision point.
+  registry.establishB = producer('establishB', ['conditionC'], 'conditionB');
+  registry.establishC = producer('establishC', ['conditionD'], 'conditionC');
+  registry.establishD = producer('establishD', ['conditionB'], 'conditionD');
+  registry.seedA = producer('seedA', [], 'conditionA');
+  worldstate.conditionC = false;
+  worldstate.conditionD = false;
+  Math.random = () => 0;
 } else if (scenario === 'initial-state') {
   worldstate.conditionB = true;
 } else if (scenario !== 'unavoidable') {
@@ -32,10 +42,16 @@ if (scenario === 'alternative') {
 // No external capability should be invoked in any of these scenarios.
 console.log = () => {};
 const grail = new Grail({ registry, worldstate });
-const result = await grail.pursue('conditionA');
+const stackEvents = [];
+const pursuitTrace = { attach(client) {
+  client.onStackEvent = event => stackEvents.push({ type: event.type, affordance: event.affordance, result: event.result });
+  return () => {};
+} };
+const result = await grail.pursue('conditionA', { pursuitTrace });
 process.stdout.write(JSON.stringify({
   reached: result.reached,
   worldstate: result.worldstate,
   observations: result.observations,
-  unresolvable: grail.client.unresolvable
+  unresolvable: grail.client.unresolvable,
+  stackEvents
 }) + '\n');
