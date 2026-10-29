@@ -115,6 +115,12 @@ continue until the goal is reached or cannot be resolved
 
 The exact traversal is not encoded as a workflow. It emerges from the current conditions and the affordances available in the world.
 
+### Cyclic dependency resolution (unreleased)
+
+The development runtime detects when resolving an unmet condition would select an affordance already on the active dependency path. It excludes that candidate for the current resolution path and considers other producers. If a selected producer cannot resolve its prerequisites, GRAIL backtracks to an earlier decision point. When no viable path remains, the pursuit ends as unresolvable rather than continuing recursive dependency expansion.
+
+Cycles in a registry do not necessarily prevent a pursuit from succeeding: an alternative affordance or an initially satisfied condition can break the cycle. Exclusions are local to a pursuit and do not count as capability invocation failures. See [Cyclic Dependency Resolution](./docs/cyclic-dependency-resolution.md) for behavior, limitations, and regression coverage. This behavior is in development and **is not included in the published v0.3.0-beta.1**.
+
 ## CLI
 
 ### `grail init`
@@ -451,6 +457,8 @@ npm test
 
 The suite covers end-to-end goal pursuit through the public API, stdio execution and output handling, world-relative path resolution, goal and input invocation overrides, stack and selection telemetry, pursuit trace collection and CLI export, and CLI behavior including configuration errors, execution failures, pursuit failures, messages, and exit codes, execution identity propagation, and recovery configuration, dispatch, observations, progress, timing, and CLI reporting.
 
+The development suite also includes six cyclic dependency regressions covering unavoidable cycles, alternative producers, initially satisfied conditions, multiple preconditions, nested backtracking, and missing producers.
+
 Tests run as independent suites with start/pass/fail reporting and a 30-second timeout per suite. The CLI regression tests are organized under `test/cli/` into commands, show, output, overrides, and errors. Run an individual suite directly, for example:
 
 ```bash
@@ -480,6 +488,6 @@ Two documents in `docs/` provide additional architectural context:
 
 ## Beta scope
 
-The beta centers on a small runtime and CLI for composing and executing GRAIL worlds. Version 0.3.0-beta.1 adds Recovery v1 and pursuit instrumentation to the interactive stdio, progress reporting, and timing introduced in v0.2.0. Literal affordance input resolution improvements remain unreleased.
+The beta centers on a small runtime and CLI for composing and executing GRAIL worlds. Version 0.3.0-beta.1 adds Recovery v1 and pursuit instrumentation to the interactive stdio, progress reporting, and timing introduced in v0.2.0. Literal affordance input resolution improvements and cyclic dependency resolution remain unreleased.
 
 More advanced selection strategies, additional tooling, richer authoring experiences, and other execution features can build on this foundation without changing the basic model of goal pursuit through conditions, affordances, effects, and bound capabilities.

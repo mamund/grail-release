@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased — Input resolution
+## Unreleased — Cyclic dependency resolution and input resolution
+
+- Detect repeated affordances on the active dependency path to prevent unbounded recursive resolution.
+- Exclude cyclic or exhausted producers temporarily and backtrack to alternative affordances when available.
+- Treat missing producers as exhausted dependency paths, allowing alternatives at earlier decision points.
+- Preserve pursuit-local exclusions separately from capability failure observations; terminate as unresolvable when no path remains.
+- Add six cyclic dependency regression tests, including nested backtracking and multiple preconditions.
 
 - Fixed affordance input resolution to accept literal string values alongside `$inputs.*` and `$outputs.*` references.
 - Preserved unresolved-reference handling for missing inputs and unsupported `$`-prefixed references.
