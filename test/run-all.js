@@ -40,7 +40,12 @@ const suites = [
   'api/pursuit-duration.js',
   'api/stack-events.js',
   'api/selection-events.js',
-  'api/pursuit-trace.js'
+  'api/pursuit-trace.js',
+  'api/cyclic-dependency.js',
+  'api/cyclic-alternative.js',
+  'api/cyclic-initial-state.js',
+  'api/cyclic-multiple-preconditions.js',
+  'api/cyclic-nested-backtracking.js'
 ];
 const timeoutMs = 30000;
 for (const suite of suites) {
