@@ -1,0 +1,41 @@
+// Child-process fixture: a broken resolver must not hang the test runner.
+import { Grail } from '../../../grail.js';
+
+const scenario = process.argv[2];
+const producer = (action, preconditions, effect) => ({
+  action, preconditions, effects: [effect], inputs: {}, binding: { enabled: false }
+});
+const registry = {
+  establishA: producer('establishA', ['conditionB'], 'conditionA'),
+  establishB: producer('establishB', ['conditionA'], 'conditionB')
+};
+const worldstate = { conditionA: false, conditionB: false };
+
+if (scenario === 'alternative') {
+  // Choose the cyclic producer first; an alternative can establish B directly.
+  registry.seedB = producer('seedB', [], 'conditionB');
+  Math.random = () => 0;
+} else if (scenario === 'multiple-preconditions') {
+  // A requires both B and C. The first producer of B leads back to A;
+  // the alternative can establish B directly. C must also be established.
+  registry.establishA = producer('establishA', ['conditionB', 'conditionC'], 'conditionA');
+  registry.seedB = producer('seedB', [], 'conditionB');
+  registry.seedC = producer('seedC', [], 'conditionC');
+  worldstate.conditionC = false;
+  Math.random = () => 0;
+} else if (scenario === 'initial-state') {
+  worldstate.conditionB = true;
+} else if (scenario !== 'unavoidable') {
+  throw new Error(`Unknown scenario: ${scenario}`);
+}
+
+// No external capability should be invoked in any of these scenarios.
+console.log = () => {};
+const grail = new Grail({ registry, worldstate });
+const result = await grail.pursue('conditionA');
+process.stdout.write(JSON.stringify({
+  reached: result.reached,
+  worldstate: result.worldstate,
+  observations: result.observations,
+  unresolvable: grail.client.unresolvable
+}) + '\n');
