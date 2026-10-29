@@ -17,20 +17,20 @@ The environment defines the possibilities. GRAIL pursues the goal without requir
 
 ## Status
 
-**GRAIL v0.3.0-beta.1 is the current published beta.** This release adds Recovery v1 (optional compensation of completed side effects) and pursuit instrumentation, including selection and stack events and trace export. It builds on v0.2.0, which introduced interactive stdio capabilities, progress reporting, and execution timing. GRAIL remains in beta; interfaces and implementation details may evolve. The literal-input resolution fix is implemented in development source but is not included in v0.3.0-beta.1.
+**GRAIL v0.3.0-beta.2 is the current published beta and the npm `latest` release.** This release adds cyclic dependency detection and backtracking, along with literal affordance input resolution. It builds on v0.3.0-beta.1, which introduced Recovery v1 and pursuit instrumentation, and v0.2.0, which added interactive stdio capabilities, progress reporting, and execution timing. GRAIL remains in beta; interfaces and implementation details may evolve.
 
 ## Quick start
 
-Install the current beta (v0.3.0-beta.1) and run it as follows:
+Install the current release (v0.3.0-beta.2) and run it as follows:
 
 ```bash
-npm install -g @mamund/grail@beta
+npm install -g @mamund/grail
 ```
 
-To pin this specific release instead of following the beta tag:
+To pin this specific release instead of following the `latest` tag:
 
 ```bash
-npm install -g @mamund/grail@0.3.0-beta.1
+npm install -g @mamund/grail@0.3.0-beta.2
 ```
 
 During development, install the repository and expose the local CLI:
@@ -115,11 +115,11 @@ continue until the goal is reached or cannot be resolved
 
 The exact traversal is not encoded as a workflow. It emerges from the current conditions and the affordances available in the world.
 
-### Cyclic dependency resolution (unreleased)
+### Cyclic dependency resolution (v0.3.0-beta.2)
 
-The development runtime detects when resolving an unmet condition would select an affordance already on the active dependency path. It excludes that candidate for the current resolution path and considers other producers. If a selected producer cannot resolve its prerequisites, GRAIL backtracks to an earlier decision point. When no viable path remains, the pursuit ends as unresolvable rather than continuing recursive dependency expansion.
+The runtime detects when resolving an unmet condition would select an affordance already on the active dependency path. It excludes that candidate for the current resolution path and considers other producers. If a selected producer cannot resolve its prerequisites, GRAIL backtracks to an earlier decision point. When no viable path remains, the pursuit ends as unresolvable rather than continuing recursive dependency expansion.
 
-Cycles in a registry do not necessarily prevent a pursuit from succeeding: an alternative affordance or an initially satisfied condition can break the cycle. Exclusions are local to a pursuit and do not count as capability invocation failures. See [Cyclic Dependency Resolution](./docs/cyclic-dependency-resolution.md) for behavior, limitations, and regression coverage. This behavior is in development and **is not included in the published v0.3.0-beta.1**.
+Cycles in a registry do not necessarily prevent a pursuit from succeeding: an alternative affordance or an initially satisfied condition can break the cycle. Exclusions are local to a pursuit and do not count as capability invocation failures. See [Cyclic Dependency Resolution](./docs/cyclic-dependency-resolution.md) for behavior, limitations, and regression coverage. This behavior is included in the published v0.3.0-beta.2 release.
 
 ## CLI
 
@@ -402,9 +402,9 @@ const result = await grail.pursue(environment.goal);
 
 Recovery is off by default. With recovery enabled, the result includes a `recovery` object; when compensation is attempted it reports `recovered`, `failed`, `skipped`, and duration. Without recovery enabled, the property is omitted. The result's `reached` field continues to describe the original goal, not the compensation outcome. The portable `runGrailWorld()` helper also accepts a `recover` option.
 
-### Literal affordance inputs (unreleased)
+### Literal affordance inputs (v0.3.0-beta.2)
 
-An upcoming release corrects input resolution so affordances can supply literal string values alongside references to configured inputs and prior capability outputs. For example:
+Version 0.3.0-beta.2 corrects input resolution so affordances can supply literal string values alongside references to configured inputs and prior capability outputs. For example:
 
 ```json
 {
@@ -413,7 +413,7 @@ An upcoming release corrects input resolution so affordances can supply literal 
 }
 ```
 
-Here, `value` is resolved from `inputs.json`, while `ruleId` is passed directly as the literal string `supplier`. Previously, the literal was treated as an unresolved input and blocked execution. The fix preserves `$inputs.*` and `$outputs.*` resolution; unsupported `$`-prefixed references remain unresolved. The [`purchase-order-validation`](https://github.com/mamund/grail-worlds/tree/main/purchase-order-validation) world demonstrates this behavior. This fix is present in the updated development source but is **not included in 0.3.0-beta.1**.
+Here, `value` is resolved from `inputs.json`, while `ruleId` is passed directly as the literal string `supplier`. Previously, the literal was treated as an unresolved input and blocked execution. The fix preserves `$inputs.*` and `$outputs.*` resolution; unsupported `$`-prefixed references remain unresolved. The [`purchase-order-validation`](https://github.com/mamund/grail-worlds/tree/main/purchase-order-validation) world demonstrates this behavior. This fix is included in the published v0.3.0-beta.2 release.
 
 ## Bindings
 
@@ -457,7 +457,7 @@ npm test
 
 The suite covers end-to-end goal pursuit through the public API, stdio execution and output handling, world-relative path resolution, goal and input invocation overrides, stack and selection telemetry, pursuit trace collection and CLI export, and CLI behavior including configuration errors, execution failures, pursuit failures, messages, and exit codes, execution identity propagation, and recovery configuration, dispatch, observations, progress, timing, and CLI reporting.
 
-The development suite also includes six cyclic dependency regressions covering unavoidable cycles, alternative producers, initially satisfied conditions, multiple preconditions, nested backtracking, and missing producers.
+The suite also includes six cyclic dependency regressions covering unavoidable cycles, alternative producers, initially satisfied conditions, multiple preconditions, nested backtracking, and missing producers.
 
 Tests run as independent suites with start/pass/fail reporting and a 30-second timeout per suite. The CLI regression tests are organized under `test/cli/` into commands, show, output, overrides, and errors. Run an individual suite directly, for example:
 
@@ -488,6 +488,6 @@ Two documents in `docs/` provide additional architectural context:
 
 ## Beta scope
 
-The beta centers on a small runtime and CLI for composing and executing GRAIL worlds. Version 0.3.0-beta.1 adds Recovery v1 and pursuit instrumentation to the interactive stdio, progress reporting, and timing introduced in v0.2.0. Literal affordance input resolution improvements and cyclic dependency resolution remain unreleased.
+The beta centers on a small runtime and CLI for composing and executing GRAIL worlds. Version 0.3.0-beta.2 adds cyclic dependency resolution and literal affordance input improvements. It builds on Recovery v1 and pursuit instrumentation introduced in v0.3.0-beta.1, and interactive stdio, progress reporting, and timing introduced in v0.2.0.
 
 More advanced selection strategies, additional tooling, richer authoring experiences, and other execution features can build on this foundation without changing the basic model of goal pursuit through conditions, affordances, effects, and bound capabilities.
