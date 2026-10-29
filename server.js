@@ -14,7 +14,7 @@ export class Server {
     this.onSelectionEvent = null; // Optional diagnostic callback, separate from progress.
   }
 
-  async attempt(affordance, inputs) {
+  async attempt(affordance, inputs, context = {}) {
     console.log(`\n[SERVER] Attempting affordance: ${affordance.action}`);
 
     const unmetPreconditions = affordance.preconditions.filter(
@@ -27,7 +27,11 @@ export class Server {
       console.log(`[SERVER] Blocked: selected unmet precondition: ${pre}`);
 
       const candidates = this.findAffordancesForCondition(pre);
-      const nextAffordance = this.selectAffordance(candidates);
+      const nextAffordance = this.selectAffordance(candidates, new Set([
+        ...(context.activeAffordances ?? []),
+        ...(context.excludedByCondition?.get(pre) ?? []),
+        ...(context.excludedAffordances ?? [])
+      ]));
 
       if (nextAffordance) {
         return {
@@ -40,6 +44,7 @@ export class Server {
       return {
         result: "BLOCKED",
         condition: pre,
+        reason: candidates.length > 0 ? "EXHAUSTED_ALTERNATIVES" : undefined,
         offeredAffordances: []
       };
     }
@@ -133,7 +138,7 @@ export class Server {
     };
   }
 
-  resolveGoal(goal) {
+  resolveGoal(goal, context = {}) {
     if (this.worldState.isPreconditionMet(goal)) {
       return {
         result: "SUCCESS",
@@ -142,7 +147,7 @@ export class Server {
     }
 
     const candidates = this.findAffordancesForCondition(goal);
-    const nextAffordance = this.selectAffordance(candidates);
+    const nextAffordance = this.selectAffordance(candidates, context.excludedAffordances);
 
     if (nextAffordance) {
       return {
@@ -210,8 +215,9 @@ export class Server {
     return selected;
   }
 
-  selectAffordance(affordances) {
+  selectAffordance(affordances, excludedAffordances = new Set()) {
     const eligible = affordances.filter(affordance => {
+      if (excludedAffordances?.has(affordance.action)) return false;
       const observations =
         this.observationStore.getByAffordance(affordance.action);
 
