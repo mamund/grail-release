@@ -44,7 +44,7 @@ export class Server {
       return {
         result: "BLOCKED",
         condition: pre,
-        reason: candidates.length > 0 ? "EXHAUSTED_ALTERNATIVES" : undefined,
+        reason: "EXHAUSTED_ALTERNATIVES",
         offeredAffordances: []
       };
     }

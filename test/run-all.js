@@ -45,7 +45,8 @@ const suites = [
   'api/cyclic-alternative.js',
   'api/cyclic-initial-state.js',
   'api/cyclic-multiple-preconditions.js',
-  'api/cyclic-nested-backtracking.js'
+  'api/cyclic-nested-backtracking.js',
+  'api/cyclic-missing-producer.js'
 ];
 const timeoutMs = 30000;
 for (const suite of suites) {

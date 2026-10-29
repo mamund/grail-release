@@ -33,6 +33,13 @@ if (scenario === 'alternative') {
   worldstate.conditionC = false;
   worldstate.conditionD = false;
   Math.random = () => 0;
+} else if (scenario === 'missing-producer-alternative') {
+  // A requires B. The first producer for B requires C, which has no producer.
+  // GRAIL must backtrack to the alternative producer for B.
+  registry.establishB = producer('establishB', ['conditionC'], 'conditionB');
+  registry.seedB = producer('seedB', [], 'conditionB');
+  worldstate.conditionC = false;
+  Math.random = () => 0;
 } else if (scenario === 'initial-state') {
   worldstate.conditionB = true;
 } else if (scenario !== 'unavoidable') {
