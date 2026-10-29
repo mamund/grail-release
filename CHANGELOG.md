@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — Cyclic dependency resolution and input resolution
+## 0.3.0-beta.2 — Cyclic dependency resolution and input improvements
 
 - Detect repeated affordances on the active dependency path to prevent unbounded recursive resolution.
 - Exclude cyclic or exhausted producers temporarily and backtrack to alternative affordances when available.

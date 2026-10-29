@@ -1,6 +1,6 @@
 {
   "name": "@mamund/grail",
-  "version": "0.3.0-beta.1",
+  "version": "0.3.0-beta.2",
   "description": "A runtime for pursuing goals within bounded environments of available capabilities.",
   "type": "module",
   "main": "index.js",
